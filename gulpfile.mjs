@@ -5,6 +5,10 @@ async function writeHtmlFile() {
   await tools.fs.writeFile(tools.file("dist/index.html"), `<!DOCTYPE html><html><head><script src="./index.js" defer></script></head></html>`);
 }
 
+async function copyToDocs() {
+  await tools.fs.cp(tools.file("dist"), tools.file("docs"), { recursive: true });
+}
+
 export const build = tools.exitAfter(
   tasks.installDependencies(),
   tasks.buildTranslationSource(),
@@ -18,7 +22,8 @@ export const buildCi = tools.exitAfter(
   tasks.buildTranslationSource(),
   tools.parallel(
     tasks.rollup.build({ type: "app", environment: "browser" }),
-    writeHtmlFile));
+    writeHtmlFile),
+  copyToDocs);
 
 export const extractTranslations = tools.exitAfter(
   tasks.litLocalizeExtractSource({ targetLocales: ["de", "en"] }));
