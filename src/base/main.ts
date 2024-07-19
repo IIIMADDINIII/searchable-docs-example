@@ -53,9 +53,31 @@ class DocsMain extends LitElement {
     super();
     this.#config = config;
     ({ setLocale: this.#setLocale, sourceLocale: this.#lastLocale } = this.#configureLocalization());
+    this.#initDocument();
+    this.#initState();
+  }
+
+  #initDocument() {
+    const title = document.createElement("title");
+    title.innerText = this.#config.title;
+    document.head.appendChild(title);
+    const metaViewport = document.createElement("meta");
+    metaViewport.name = "viewport";
+    metaViewport.content = "width=device-width, initial-scale=1";
+    document.head.appendChild(metaViewport);
+    const metaDescription = document.createElement("meta");
+    metaDescription.name = "description";
+    metaDescription.content = this.#config.description;
+    document.head.appendChild(metaDescription);
     this.#setDocumentStyles();
     document.body.appendChild(this);
-    this.#initState();
+  }
+
+  #setDocumentStyles() {
+    const styleSheet = css`
+    `.styleSheet;
+    if (styleSheet === undefined) throw new Error("Error while creating Document Styles");
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
   }
 
   #configureLocalization(): GetSetLocale {
@@ -79,6 +101,7 @@ class DocsMain extends LitElement {
   set #locale(value: string) {
     this.#lastLocale = value;
     this.#setLocale(value).catch(console.error);
+    document.documentElement.setAttribute("lang", value);
     this.#updateState();
   }
 
@@ -115,12 +138,7 @@ class DocsMain extends LitElement {
     return this.#config.defaultLanguage;
   }
 
-  #setDocumentStyles() {
-    const styleSheet = css`
-    `.styleSheet;
-    if (styleSheet === undefined) throw new Error("Error while creating Document Styles");
-    document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
-  }
+
 
   override render(): TemplateResult {
     return html`

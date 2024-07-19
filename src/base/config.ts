@@ -10,4 +10,6 @@ export type DocsConfig<T extends string = string> = {
   defaultLanguage: NoInfer<T>;
   languageDisplayNames: LanguageDisplayNames<T>;
   translations: Translations<T>;
+  title: string;
+  description: string;
 };
