@@ -1,0 +1,128 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@lit/localize':
+        specifier: ^0.12.1
+        version: 0.12.1
+      lit:
+        specifier: ^3.1.2
+        version: 3.1.4
+      tslib:
+        specifier: ^2.6.2
+        version: 2.6.3
+    devDependencies:
+      '@types/js-build-tool-types':
+        specifier: npm:@iiimaddiniii/js-build-tool-types@0.9.10
+        version: '@iiimaddiniii/js-build-tool-types@0.9.10(@types/node@20.14.11)(typescript@5.5.3)'
+
+  locales:
+    devDependencies:
+      '@types/js-build-tool-types':
+        specifier: npm:@iiimaddiniii/js-build-tool-types@0.9.0
+        version: '@iiimaddiniii/js-build-tool-types@0.9.0(@types/node@20.14.11)(typescript@5.5.3)'
+
+packages:
+
+  '@iiimaddiniii/js-build-tool-types@0.9.0':
+    resolution: {integrity: sha512-2SdrnjaUIBe2uEop7kqongZ1wBgYqa2qxV/h3zvpD5bVQ7IjUcSjrnJswatYPUAwjbOiyRoW7x9GI1yNmA5HTg==}
+    peerDependencies:
+      '@types/node': '>=20.8.10'
+      typescript: '>=5.2.2'
+
+  '@iiimaddiniii/js-build-tool-types@0.9.10':
+    resolution: {integrity: sha512-4VNXFGDCR+THbodYf7gBtCs2p3JXikiSLaVBgrhY9Pv3UTdySfYgtYQx6XMVu0MvSRon7e4FWTxdWdfILC6RmA==}
+    peerDependencies:
+      '@types/node': '>=20.8.10'
+      typescript: '>=5.2.2'
+
+  '@lit-labs/ssr-dom-shim@1.2.0':
+    resolution: {integrity: sha512-yWJKmpGE6lUURKAaIltoPIE/wrbY3TEkqQt+X0m+7fQNnAv0keydnYvbiJFP1PnMhizmIWRWOG5KLhYyc/xl+g==}
+
+  '@lit/localize@0.12.1':
+    resolution: {integrity: sha512-uuF6OO6fjqomCf3jXsJ5cTGf1APYuN88S4Gvo/fjt9YkG4OMaMvpEUqd5oWhyzrJfY+HcenAbLJNi2Cq3H7gdg==}
+
+  '@lit/reactive-element@2.0.4':
+    resolution: {integrity: sha512-GFn91inaUa2oHLak8awSIigYz0cU0Payr1rcFsrkf5OJ5eSPxElyZfKh0f2p9FsTiZWXQdWGJeXZICEfXXYSXQ==}
+
+  '@types/node@20.14.11':
+    resolution: {integrity: sha512-kprQpL8MMeszbz6ojB5/tU8PLN4kesnN8Gjzw349rDlNgsSzg90lAVj3llK99Dh7JON+t9AuscPPFW6mPbTnSA==}
+
+  '@types/trusted-types@2.0.7':
+    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  lit-element@4.0.6:
+    resolution: {integrity: sha512-U4sdJ3CSQip7sLGZ/uJskO5hGiqtlpxndsLr6mt3IQIjheg93UKYeGQjWMRql1s/cXNOaRrCzC2FQwjIwSUqkg==}
+
+  lit-html@3.1.4:
+    resolution: {integrity: sha512-yKKO2uVv7zYFHlWMfZmqc+4hkmSbFp8jgjdZY9vvR9jr4J8fH6FUMXhr+ljfELgmjpvlF7Z1SJ5n5/Jeqtc9YA==}
+
+  lit@3.1.4:
+    resolution: {integrity: sha512-q6qKnKXHy2g1kjBaNfcoLlgbI3+aSOZ9Q4tiGa9bGYXq5RBXxkVTqTIVmP2VWMp29L4GyvCFm8ZQ2o56eUAMyA==}
+
+  tslib@2.6.3:
+    resolution: {integrity: sha512-xNvxJEOUiWPGhUuUdQgAJPKOOJfGnIyKySOc09XkKsgdUV/3E2zvwZYdejjmRgPCgcym1juLH3226yA7sEFJKQ==}
+
+  typescript@5.5.3:
+    resolution: {integrity: sha512-/hreyEujaB0w76zKo6717l3L0o/qEUtRgdvUBvlkhoWeOVMjMuHNHk0BRBzikzuGDqNmPQbg5ifMEqsHLiIUcQ==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+  undici-types@5.26.5:
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+
+snapshots:
+
+  '@iiimaddiniii/js-build-tool-types@0.9.0(@types/node@20.14.11)(typescript@5.5.3)':
+    dependencies:
+      '@types/node': 20.14.11
+      typescript: 5.5.3
+
+  '@iiimaddiniii/js-build-tool-types@0.9.10(@types/node@20.14.11)(typescript@5.5.3)':
+    dependencies:
+      '@types/node': 20.14.11
+      typescript: 5.5.3
+
+  '@lit-labs/ssr-dom-shim@1.2.0': {}
+
+  '@lit/localize@0.12.1':
+    dependencies:
+      lit: 3.1.4
+
+  '@lit/reactive-element@2.0.4':
+    dependencies:
+      '@lit-labs/ssr-dom-shim': 1.2.0
+
+  '@types/node@20.14.11':
+    dependencies:
+      undici-types: 5.26.5
+
+  '@types/trusted-types@2.0.7': {}
+
+  lit-element@4.0.6:
+    dependencies:
+      '@lit-labs/ssr-dom-shim': 1.2.0
+      '@lit/reactive-element': 2.0.4
+      lit-html: 3.1.4
+
+  lit-html@3.1.4:
+    dependencies:
+      '@types/trusted-types': 2.0.7
+
+  lit@3.1.4:
+    dependencies:
+      '@lit/reactive-element': 2.0.4
+      lit-element: 4.0.6
+      lit-html: 3.1.4
+
+  tslib@2.6.3: {}
+
+  typescript@5.5.3: {}
+
+  undici-types@5.26.5: {}

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+<file target-language="en" source-language="en-x-dev" original="lit-localize-inputs" datatype="plaintext">
+<body>
+<trans-unit id="s63e71d20d1eaca93">
+  <source>German</source>
+  <target state="translated">German</target>
+</trans-unit>
+<trans-unit id="s4caed5b7a7e5d89b">
+  <source>English</source>
+  <target state="translated">English</target>
+</trans-unit>
+<trans-unit id="s5f43af3669b1e098">
+  <source>Source</source>
+  <target state="translated">Source</target>
+</trans-unit>
+</body>
+</file>
+</xliff>

@@ -1,0 +1,31 @@
+{
+  "name": "searchable-docs-example",
+  "version": "0.1.0",
+  "description": "The files for the Render Process",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "type": "commonjs",
+  "scripts": {
+    "build": "pnpm run gulp build",
+    "buildCi": "pnpm run gulp buildCi",
+    "extractTranslations": "pnpm run gulp extractTranslations",
+    "gulp": "pnpm --package=@iiimaddiniii/js-build-tool-cli@0.9.10 dlx js-build-tool"
+  },
+  "author": "IIIMADDINIII",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/js-build-tool-types": "npm:@iiimaddiniii/js-build-tool-types@0.9.10"
+  },
+  "dependencies": {
+    "lit": "^3.1.2",
+    "@lit/localize": "^0.12.1",
+    "tslib": "^2.6.2"
+  }
+}
