@@ -82,7 +82,7 @@ class DocsMain extends LitElement {
 
   #configureLocalization(): GetSetLocale {
     let sourceLocale = "en-x-dev";
-    const sourceTranslations = Object.entries(this.#config.translations).filter(([_, value]) => value === "source");
+    const sourceTranslations = Object.entries(this.#config.localeTemplates).filter(([_, value]) => value === "source");
     if (sourceTranslations.length >= 2) throw new Error(`only one language can have the translation set to "source"`);
     const sourceLanguage = sourceTranslations[0]?.[0];
     if (sourceLanguage !== undefined) sourceLocale = sourceLanguage;
@@ -90,7 +90,7 @@ class DocsMain extends LitElement {
   }
 
   async #loadLocale(locale: string): Promise<LocaleModule> {
-    const translation = this.#config.translations[locale];
+    const translation = this.#config.localeTemplates[locale];
     if (typeof translation !== "function") throw new Error(`Invalid locale id: ${locale}`);
     return translation(str, html);
   }
@@ -134,8 +134,8 @@ class DocsMain extends LitElement {
   }
 
   #getLocaleState(locale: string | undefined): string {
-    if (locale !== undefined && Object.hasOwn(this.#config.translations, locale)) return locale;
-    return this.#config.defaultLanguage;
+    if (locale !== undefined && Object.hasOwn(this.#config.localeTemplates, locale)) return locale;
+    return this.#config.defaultLocale;
   }
 
 
@@ -147,11 +147,18 @@ class DocsMain extends LitElement {
   }
 
   #renderLocaleSelector(): DirectiveResult {
-    return guard([this.#locale, this.#config.languageDisplayNames], () => html`
-      <select .value=${live(this.#locale)} @change=${this.#onChangeLocale}>
-        ${repeat(Object.entries(this.#config.languageDisplayNames()), (i) => i[0], (i) => html`<option value=${i[0]}>${i[1]}</option>`)}
-      </select>
-    `);
+    return guard([this.#locale, this.#config.localeDisplayNames], () => {
+      const renderedLocales = Object.entries(this.#config.localeDisplayNames());
+      const sortedLocales = renderedLocales
+        .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
+        .sort((a, b) => a[1][0] - b[1][0]);
+      const locale = this.#locale;
+      return html`
+        <select @change=${this.#onChangeLocale}>
+          ${repeat(sortedLocales, (i) => i[0], (i) => html`<option value=${i[0]} .selected=${live(i[0] === locale)}>${i[1][1]}</option>`)}
+        </select>
+      `;
+    });
   }
 
   #onChangeLocale(e: Event): void {

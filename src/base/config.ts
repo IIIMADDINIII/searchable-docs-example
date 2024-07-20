@@ -4,12 +4,13 @@ export type TranslationTemplates = (str: typeof import("@lit/localize").str, htm
 export type Translation = "source" | TranslationTemplates;
 
 export type Translations<T extends string> = { [key in T]: Translation; };
-export type LanguageDisplayNames<T extends string> = () => { [K in T]: string; };
+export type LanguageDisplayNames<T extends string> = () => { [K in T]: string | [order: number, displayName: string]; };
 
 export type DocsConfig<T extends string = string> = {
-  defaultLanguage: NoInfer<T>;
-  languageDisplayNames: LanguageDisplayNames<T>;
-  translations: Translations<T>;
+  defaultLocale: NoInfer<T>;
+  localeDisplayNames: LanguageDisplayNames<T>;
+  localeTemplates: Translations<T>;
+
   title: string;
   description: string;
 };
