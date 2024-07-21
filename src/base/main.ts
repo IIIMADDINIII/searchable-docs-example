@@ -1,6 +1,6 @@
 import { configureLocalization, localized, str, type LocaleModule } from "@lit/localize";
 import { css, html, LitElement, type TemplateResult } from "lit";
-import { customElement } from "lit/decorators.js";
+import { customElement, property } from "lit/decorators.js";
 import type { DirectiveResult } from "lit/directive.js";
 import { guard } from "lit/directives/guard.js";
 import { live } from "lit/directives/live.js";
@@ -8,7 +8,7 @@ import { repeat } from "lit/directives/repeat.js";
 import type { DocsConfig } from "./config.js";
 import { isElement } from "./utils.js";
 
-export function docs<T extends string>(config: DocsConfig<T>) {
+export function docs<LanguageId extends string, VersionId extends string>(config: DocsConfig<LanguageId, VersionId>) {
   try {
     new DocsMain(config);
   } catch (e) {
@@ -18,10 +18,11 @@ export function docs<T extends string>(config: DocsConfig<T>) {
 
 type GetLocale = () => string;
 type SetLocale = (newLocale: string) => Promise<void>;
-type GetSetLocale = { sourceLocale: string, getLocale: GetLocale; setLocale: SetLocale; };
+type GetSetLocale = { getLocale: GetLocale; setLocale: SetLocale; };
 
 type UrlParams = {
   locale: string;
+  version: string;
 };
 
 function getUrlParams(): Partial<UrlParams> {
@@ -46,15 +47,24 @@ class DocsMain extends LitElement {
 
   #config: DocsConfig;
   #setLocale: SetLocale;
-  #lastLocale: string;
+  #locale: string = "en-x-dev";
+  #version: string = "";
   #enableUpdateState: boolean = false;
 
   constructor(config: DocsConfig) {
     super();
     this.#config = config;
-    ({ setLocale: this.#setLocale, sourceLocale: this.#lastLocale } = this.#configureLocalization());
+    ({ setLocale: this.#setLocale } = this.#initLocale());
     this.#initDocument();
     this.#initState();
+  }
+
+  #initLocale(): GetSetLocale {
+    const sourceTranslations = Object.entries(this.#config.localeTemplates).filter(([_, value]) => value === "source");
+    if (sourceTranslations.length >= 2) throw new Error(`only one language can have the translation set to "source"`);
+    const sourceLanguage = sourceTranslations[0]?.[0];
+    if (sourceLanguage !== undefined) this.#locale = sourceLanguage;
+    return { ...configureLocalization({ sourceLocale: this.#locale, targetLocales: ["de", "en"], loadLocale: this.#loadLocale.bind(this) }) };
   }
 
   #initDocument() {
@@ -80,13 +90,11 @@ class DocsMain extends LitElement {
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
   }
 
-  #configureLocalization(): GetSetLocale {
-    let sourceLocale = "en-x-dev";
-    const sourceTranslations = Object.entries(this.#config.localeTemplates).filter(([_, value]) => value === "source");
-    if (sourceTranslations.length >= 2) throw new Error(`only one language can have the translation set to "source"`);
-    const sourceLanguage = sourceTranslations[0]?.[0];
-    if (sourceLanguage !== undefined) sourceLocale = sourceLanguage;
-    return { sourceLocale, ...configureLocalization({ sourceLocale, targetLocales: ["de", "en"], loadLocale: this.#loadLocale.bind(this) }) };
+  #initState() {
+    this.#onPopState();
+    setUrlParams(this.#getState(), true);
+    window.addEventListener("popstate", this.#onPopState.bind(this));
+    this.#enableUpdateState = true;
   }
 
   async #loadLocale(locale: string): Promise<LocaleModule> {
@@ -95,27 +103,31 @@ class DocsMain extends LitElement {
     return translation(str, html);
   }
 
-  get #locale(): string {
-    return this.#lastLocale;
-  }
-  set #locale(value: string) {
-    this.#lastLocale = value;
-    this.#setLocale(value).catch(console.error);
-    document.documentElement.setAttribute("lang", value);
+  @property({ type: String })
+  set locale(value: string) {
+    this.#locale = value;
+    this.#setLocale(this.#locale).catch(console.error);
+    document.documentElement.setAttribute("lang", this.#locale);
     this.#updateState();
+  }
+  get locale(): string {
+    return this.#locale;
+  }
+
+  @property({ type: String })
+  set version(value: string) {
+    this.#version = this.#getValidatedVersion(value);
+    this.#updateState();
+  }
+  get version(): string {
+    return this.#version;
   }
 
   #getState(): UrlParams {
     return {
-      locale: this.#locale,
+      locale: this.locale,
+      version: this.version,
     };
-  }
-
-  #initState() {
-    this.#onPopState();
-    setUrlParams(this.#getState(), true);
-    window.addEventListener("popstate", this.#onPopState.bind(this));
-    this.#enableUpdateState = true;
   }
 
   #updateState() {
@@ -127,35 +139,40 @@ class DocsMain extends LitElement {
     this.#enableUpdateState = false;
     try {
       const state = getUrlParams();
-      this.#locale = this.#getLocaleState(state.locale);
+      this.locale = this.#getValidatedLocale(state.locale);
+      this.version = this.#getValidatedVersion(state.version);
     } finally {
       this.#enableUpdateState = true;
     }
   }
 
-  #getLocaleState(locale: string | undefined): string {
+  #getValidatedLocale(locale: string | undefined): string {
     if (locale !== undefined && Object.hasOwn(this.#config.localeTemplates, locale)) return locale;
     return this.#config.defaultLocale;
   }
 
-
+  #getValidatedVersion(version: string | undefined): string {
+    if (version !== undefined && Object.hasOwn(this.#config.versionTemplates, version)) return version;
+    return this.#config.defaultVersion;
+  }
 
   override render(): TemplateResult {
     return html`
+      ${this.#renderVersionSelector()}
       ${this.#renderLocaleSelector()}
     `;
   }
 
   #renderLocaleSelector(): DirectiveResult {
-    return guard([this.#locale, this.#config.localeDisplayNames], () => {
-      const renderedLocales = Object.entries(this.#config.localeDisplayNames());
-      const sortedLocales = renderedLocales
+    return guard([this.locale, this.#config.localeDisplayNames], () => {
+      const rendered = Object.entries(this.#config.localeDisplayNames());
+      const sorted = rendered
         .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
         .sort((a, b) => a[1][0] - b[1][0]);
-      const locale = this.#locale;
+      const selected = this.locale;
       return html`
         <select @change=${this.#onChangeLocale}>
-          ${repeat(sortedLocales, (i) => i[0], (i) => html`<option value=${i[0]} .selected=${live(i[0] === locale)}>${i[1][1]}</option>`)}
+          ${repeat(sorted, (i) => i[0], (i) => html`<option value=${i[0]} .selected=${live(i[0] === selected)}>${i[1][1]}</option>`)}
         </select>
       `;
     });
@@ -163,7 +180,27 @@ class DocsMain extends LitElement {
 
   #onChangeLocale(e: Event): void {
     if (!isElement(e.currentTarget, "select")) return;
-    this.#locale = e.currentTarget.value;
+    this.locale = e.currentTarget.value;
+  }
+
+  #renderVersionSelector(): DirectiveResult {
+    return guard([this.version, this.#config.versionDisplayNames], () => {
+      const rendered = Object.entries(this.#config.versionDisplayNames());
+      const sorted = rendered
+        .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
+        .sort((a, b) => a[1][0] - b[1][0]);
+      const selected = this.version;
+      return html`
+        <select @change=${this.#onChangeVersion}>
+          ${repeat(sorted, (i) => i[0], (i) => html`<option value=${i[0]} .selected=${live(i[0] === selected)}>${i[1][1]}</option>`)}
+        </select>
+      `;
+    });
+  }
+
+  #onChangeVersion(e: Event): void {
+    if (!isElement(e.currentTarget, "select")) return;
+    this.version = e.currentTarget.value;
   }
 }
 

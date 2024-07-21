@@ -16,6 +16,8 @@ export function templates(str: typeof import("@lit/localize").str, html: typeof 
       's4caed5b7a7e5d89b': `Englisch`,
 's5f43af3669b1e098': `Quelle`,
 's63e71d20d1eaca93': `Deutsch`,
+'s08cf0b07b5709128': `v1`,
+'s08cf0e07b5709641': `v2`,
     };
   cache = {templates};
   return cache;
