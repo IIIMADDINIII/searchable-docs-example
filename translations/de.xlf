@@ -14,6 +14,22 @@
   <source>Source</source>
   <target state="translated">Quelle</target>
 </trans-unit>
+<trans-unit id="s08cf0b07b5709128">
+  <source>v1</source>
+  <target state="translated">v1</target>
+</trans-unit>
+<trans-unit id="s08cf0e07b5709641">
+  <source>v2</source>
+  <target state="translated">v2</target>
+</trans-unit>
+<trans-unit id="sf9e6e6ef197c2b25">
+  <source>test</source>
+  <target state="translated">test</target>
+</trans-unit>
+<trans-unit id="s1f857f484dfd3815">
+  <source>test2</source>
+  <target state="translated">test2</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

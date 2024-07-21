@@ -15,8 +15,8 @@ docs({
   defaultVersion: "v1",
   versionDisplayNames: () => ({ v1: [1, msg("v1")], v2: [1, msg("v2")] }),
   versionTemplates: {
-    v1: () => ({}),
-    v2: () => ({}),
+    v1: () => ({ displayName: msg("test") }),
+    v2: () => ({ displayName: msg("test2") }),
   }
 });
 

@@ -5,10 +5,11 @@ import type { DirectiveResult } from "lit/directive.js";
 import { guard } from "lit/directives/guard.js";
 import { live } from "lit/directives/live.js";
 import { repeat } from "lit/directives/repeat.js";
-import type { DocsConfig } from "./config.js";
-import { isElement } from "./utils.js";
+import "./nav";
+import type { DocsConfig, GetSetLocale, OrderedDisplayNamesElement, SetLocale, UrlParams } from "./types.js";
+import { getUrlParams, isElement, passThroughAttributeConverter, setUrlParams } from "./utils.js";
 
-export function docs<LanguageId extends string, VersionId extends string>(config: DocsConfig<LanguageId, VersionId>) {
+export function docs<LocaleId extends string, VersionId extends string>(config: DocsConfig<LocaleId, VersionId>) {
   try {
     new DocsMain(config);
   } catch (e) {
@@ -16,42 +17,21 @@ export function docs<LanguageId extends string, VersionId extends string>(config
   }
 }
 
-type GetLocale = () => string;
-type SetLocale = (newLocale: string) => Promise<void>;
-type GetSetLocale = { getLocale: GetLocale; setLocale: SetLocale; };
-
-type UrlParams = {
-  locale: string;
-  version: string;
-};
-
-function getUrlParams(): Partial<UrlParams> {
-  const result: { [key: string]: string; } = {};
-  (new URL(location.href)).searchParams.forEach((v, k) => result[k] = v);
-  return result;
-}
-
-function setUrlParams(params: UrlParams, init: boolean = false): void {
-  const url = new URL(location.href);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-  if (init) {
-    window.history.replaceState(params, "", url);
-    return;
-  }
-  window.history.pushState({}, "", url);
-};
-
 @customElement("docs-main")
 @localized()
-class DocsMain extends LitElement {
+class DocsMain<LocaleId extends string = string, VersionId extends string = string> extends LitElement {
 
-  #config: DocsConfig;
+  static override get observedAttributes(): string[] {
+    return ["locale", ...super.observedAttributes];
+  }
+
+  #config: DocsConfig<LocaleId, VersionId>;
   #setLocale: SetLocale;
-  #locale: string = "en-x-dev";
-  #version: string = "";
+  #locale: LocaleId = <LocaleId>"en-x-dev";
+  #version: VersionId = <VersionId>"";
   #enableUpdateState: boolean = false;
 
-  constructor(config: DocsConfig) {
+  constructor(config: DocsConfig<LocaleId, VersionId>) {
     super();
     this.#config = config;
     ({ setLocale: this.#setLocale } = this.#initLocale());
@@ -63,7 +43,7 @@ class DocsMain extends LitElement {
     const sourceTranslations = Object.entries(this.#config.localeTemplates).filter(([_, value]) => value === "source");
     if (sourceTranslations.length >= 2) throw new Error(`only one language can have the translation set to "source"`);
     const sourceLanguage = sourceTranslations[0]?.[0];
-    if (sourceLanguage !== undefined) this.#locale = sourceLanguage;
+    if (this.#isValidLocale(sourceLanguage)) this.#locale = sourceLanguage;
     return { ...configureLocalization({ sourceLocale: this.#locale, targetLocales: ["de", "en"], loadLocale: this.#loadLocale.bind(this) }) };
   }
 
@@ -98,28 +78,36 @@ class DocsMain extends LitElement {
   }
 
   async #loadLocale(locale: string): Promise<LocaleModule> {
-    const translation = this.#config.localeTemplates[locale];
-    if (typeof translation !== "function") throw new Error(`Invalid locale id: ${locale}`);
-    return translation(str, html);
+    const template = this.#config.localeTemplates[this.#getValidatedLocale(locale)];
+    if (template === "source") throw new Error("the source locale has no translation file wich could be loaded");
+    return template(str, html);
   }
 
-  @property({ type: String })
-  set locale(value: string) {
-    this.#locale = value;
+  set locale(value: LocaleId | string | undefined | null) {
+    this.#locale = this.#getValidatedLocale(value);
+    if (this.getAttribute("locale") !== this.#locale) this.setAttribute("locale", this.#locale);
     this.#setLocale(this.#locale).catch(console.error);
     document.documentElement.setAttribute("lang", this.#locale);
     this.#updateState();
   }
-  get locale(): string {
+  get locale(): LocaleId {
     return this.#locale;
   }
 
-  @property({ type: String })
-  set version(value: string) {
+  override attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
+    if (name === "locale") {
+      this.locale = value;
+      return;
+    }
+    super.attributeChangedCallback(name, _old, value);
+  }
+
+  @property({ reflect: true, converter: passThroughAttributeConverter })
+  set version(value: VersionId | string | undefined | null) {
     this.#version = this.#getValidatedVersion(value);
     this.#updateState();
   }
-  get version(): string {
+  get version(): VersionId {
     return this.#version;
   }
 
@@ -139,33 +127,44 @@ class DocsMain extends LitElement {
     this.#enableUpdateState = false;
     try {
       const state = getUrlParams();
-      this.locale = this.#getValidatedLocale(state.locale);
-      this.version = this.#getValidatedVersion(state.version);
+      this.locale = state.locale;
+      this.version = state.version;
     } finally {
       this.#enableUpdateState = true;
     }
   }
 
-  #getValidatedLocale(locale: string | undefined): string {
-    if (locale !== undefined && Object.hasOwn(this.#config.localeTemplates, locale)) return locale;
+  #getValidatedLocale(locale: string | undefined | null): LocaleId {
+    if (this.#isValidLocale(locale)) return locale;
     return this.#config.defaultLocale;
   }
 
-  #getValidatedVersion(version: string | undefined): string {
-    if (version !== undefined && Object.hasOwn(this.#config.versionTemplates, version)) return version;
+  #isValidLocale(locale: string | undefined | null): locale is LocaleId {
+    return typeof locale === "string" && Object.hasOwn(this.#config.localeTemplates, locale);
+  }
+
+  #getValidatedVersion(version: string | undefined | null): VersionId {
+    if (this.#isValidVersion(version)) return version;
     return this.#config.defaultVersion;
+  }
+
+  #isValidVersion(version: string | undefined | null): version is VersionId {
+    return typeof version === "string" && Object.hasOwn(this.#config.versionTemplates, version);
   }
 
   override render(): TemplateResult {
     return html`
-      ${this.#renderVersionSelector()}
-      ${this.#renderLocaleSelector()}
+      <header>
+        ${this.#renderVersionSelector()}
+        ${this.#renderLocaleSelector()}
+      </header>
+      ${guard([this.locale, this.version], () => html`<docs-nav .docsDescription=${this.#config.versionTemplates[this.version]()}></docs-nav>`)}
     `;
   }
 
   #renderLocaleSelector(): DirectiveResult {
     return guard([this.locale, this.#config.localeDisplayNames], () => {
-      const rendered = Object.entries(this.#config.localeDisplayNames());
+      const rendered = Object.entries<OrderedDisplayNamesElement>(this.#config.localeDisplayNames());
       const sorted = rendered
         .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
         .sort((a, b) => a[1][0] - b[1][0]);
@@ -185,7 +184,7 @@ class DocsMain extends LitElement {
 
   #renderVersionSelector(): DirectiveResult {
     return guard([this.version, this.#config.versionDisplayNames], () => {
-      const rendered = Object.entries(this.#config.versionDisplayNames());
+      const rendered = Object.entries<OrderedDisplayNamesElement>(this.#config.versionDisplayNames());
       const sorted = rendered
         .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
         .sort((a, b) => a[1][0] - b[1][0]);
@@ -208,4 +207,4 @@ declare global {
   interface HTMLElementTagNameMap {
     "docs-main": DocsMain;
   }
-}
+};
