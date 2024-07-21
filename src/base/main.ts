@@ -4,6 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 import type { DirectiveResult } from "lit/directive.js";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
+import "./document";
 import "./nav";
 import "./select";
 import type { DocsConfig, GetLocale, GetSetLocale, SetLocale, UrlParams } from "./types.js";
@@ -21,17 +22,47 @@ export function docs<LocaleId extends string, VersionId extends string>(config: 
 @localized()
 class DocsMain<LocaleId extends string = string, VersionId extends string = string> extends LitElement {
   static override styles = css`
-    header {
+    :host {
       display: flex;
-      padding: 8px;
-      border-bottom: 1px solid black;
-      gap: 8px;
-      docs-select {
-        min-width: 104px;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      header {
+        display: flex;
+        padding: 8px;
+        border-bottom: 1px solid black;
+        gap: 8px;
+        docs-select {
+          min-width: 104px;
+        }
+      }
+      main {
+        display: flex;
+        flex-grow: 1;
+        docs-nav {
+          flex: 0 1 400px;
+          min-width: 200px;
+          display: none;
+          overflow-y: scroll;
+        }
+        docs-document {
+          flex: 0 1 1000px;
+          min-width: 600px;
+          overflow-y: scroll;
+        }
+      }
+      .fill {
+        flex-grow: 1;
       }
     }
-    .fill {
-      flex-grow: 1;
+    @media (min-width: 801px) {
+      :host {
+        main {
+          docs-nav {
+            display: block
+          }
+        }
+      }
     }
   `;
   static override get observedAttributes(): string[] {
@@ -207,11 +238,19 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
     `;
   }
 
+  #rerenderDocumentCache = createCacheFunction();
   #rerenderDocument(): TemplateResult {
-    const template = this.#config.versionTemplates[this.version]();
+    const template = this.#rerenderDocumentCache([this.#getLocale(), this.version], () => this.#config.versionTemplates[this.version]());
     this.#titleElement.innerText = template.title;
     this.#descriptionElement.content = template.description;
-    return html`<docs-nav .docsDescription=${template}></docs-nav>`;
+    return html`
+      <main>
+        <docs-nav .docsDescription=${template}></docs-nav>
+        <div class="fill"></div>
+        <docs-document .docsDescription=${template}></docs-document>
+        <div class="fill"></div>
+      </main>
+    `;
   }
 
   #renderLocaleSelectorCache = createCacheFunction();
@@ -232,7 +271,7 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
     const selected = this.version;
     return html`
       <docs-select>
-        <span slot="selected" href=${location.href}>${map[selected].displayName}</span>
+        <span slot="selected">${map[selected].displayName}</span>
         ${repeat(array, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selected })} href=${getUrlWithParams({ version: id }).href}>${displayName}</a>`)}
       </docs-select>
     `;
