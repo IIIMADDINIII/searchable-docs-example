@@ -4,15 +4,19 @@ export type TranslationTemplates = (str: typeof import("@lit/localize").str, htm
 export type Translation = "source" | TranslationTemplates;
 
 export type LocaleTemplates<LocaleId extends string> = { [key in LocaleId]: Translation; };
-export type OrderedDisplayNamesElement = string | [order: number, displayName: string];
-export type OrderedDisplayNames<LocaleId extends string> = () => { [K in LocaleId]: OrderedDisplayNamesElement; };
 
-export type DocsDescription = { displayName: string; };
+export type OrderedDisplayNamesElement = string | [order: number, displayName: string];
+export type OrderedDisplayNames<Id extends string> = () => { [K in Id]: OrderedDisplayNamesElement; };
+export type DisplayNamesArray<Id extends string> = { id: Id, order: number, displayName: string; }[];
+export type DisplayNamesMap<Id extends string> = { [K in Id]: { id: Id, order: number, displayName: string; } };
+
+export type DocsDescription = {
+  title: string;
+  description: string;
+};
 export type VersionTemplates<VersionId extends string> = { [key in VersionId]: () => DocsDescription };
 
 export type DocsConfig<LocaleId extends string = string, VersionId extends string = string> = {
-  title: string;
-  description: string;
 
   defaultLocale: NoInfer<LocaleId>;
   localeDisplayNames: OrderedDisplayNames<LocaleId>;
@@ -21,6 +25,8 @@ export type DocsConfig<LocaleId extends string = string, VersionId extends strin
   defaultVersion: NoInfer<VersionId>;
   versionDisplayNames: OrderedDisplayNames<VersionId>;
   versionTemplates: VersionTemplates<VersionId>;
+
+  disableAnchorInterception?: boolean | undefined;
 };
 
 export type GetLocale = () => string;

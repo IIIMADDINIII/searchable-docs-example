@@ -22,13 +22,17 @@
   <source>v2</source>
   <target state="translated">v2</target>
 </trans-unit>
-<trans-unit id="sf9e6e6ef197c2b25">
-  <source>test</source>
-  <target state="translated">test</target>
+<trans-unit id="sac4513d78f305333">
+  <source>searchable docs example v1</source>
+  <target state="translated">Suchbare Beispiel Doku v1</target>
 </trans-unit>
-<trans-unit id="s1f857f484dfd3815">
-  <source>test2</source>
-  <target state="translated">test2</target>
+<trans-unit id="sefcd57cb2edf16bb">
+  <source>Example implementation of a searchable manual</source>
+  <target state="translated">Beispiel Implementierung eines suchbaren Handbuches</target>
+</trans-unit>
+<trans-unit id="sac4514d78f3054e6">
+  <source>searchable docs example v2</source>
+  <target state="translated">Suchbare Beispiel Doku v2</target>
 </trans-unit>
 </body>
 </file>

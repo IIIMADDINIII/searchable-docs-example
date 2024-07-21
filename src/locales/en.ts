@@ -15,11 +15,12 @@ export function templates(str: typeof import("@lit/localize").str, html: typeof 
   const templates = {
       's08cf0b07b5709128': `v1`,
 's08cf0e07b5709641': `v2`,
-'s1f857f484dfd3815': `test2`,
 's4caed5b7a7e5d89b': `English`,
 's5f43af3669b1e098': `Source`,
 's63e71d20d1eaca93': `German`,
-'sf9e6e6ef197c2b25': `test`,
+'sac4513d78f305333': `searchable docs example v1`,
+'sac4514d78f3054e6': `searchable docs example v2`,
+'sefcd57cb2edf16bb': `Example implementation of a searchable manual`,
     };
   cache = {templates};
   return cache;

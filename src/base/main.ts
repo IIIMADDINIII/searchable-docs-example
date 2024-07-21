@@ -2,12 +2,12 @@ import { configureLocalization, localized, str, type LocaleModule } from "@lit/l
 import { css, html, LitElement, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import type { DirectiveResult } from "lit/directive.js";
-import { guard } from "lit/directives/guard.js";
-import { live } from "lit/directives/live.js";
+import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import "./nav";
-import type { DocsConfig, GetSetLocale, OrderedDisplayNamesElement, SetLocale, UrlParams } from "./types.js";
-import { getUrlParams, isElement, passThroughAttributeConverter, setUrlParams } from "./utils.js";
+import "./select";
+import type { DocsConfig, GetLocale, GetSetLocale, SetLocale, UrlParams } from "./types.js";
+import { createCacheFunction, getUrlParams, getUrlWithParams, isElement, passThroughAttributeConverter, searchParamsToObject, setUrlParams, sortDisplayNames } from "./utils.js";
 
 export function docs<LocaleId extends string, VersionId extends string>(config: DocsConfig<LocaleId, VersionId>) {
   try {
@@ -20,22 +20,40 @@ export function docs<LocaleId extends string, VersionId extends string>(config: 
 @customElement("docs-main")
 @localized()
 class DocsMain<LocaleId extends string = string, VersionId extends string = string> extends LitElement {
-
+  static override styles = css`
+    header {
+      display: flex;
+      padding: 8px;
+      border-bottom: 1px solid black;
+      gap: 8px;
+      docs-select {
+        min-width: 104px;
+      }
+    }
+    .fill {
+      flex-grow: 1;
+    }
+  `;
   static override get observedAttributes(): string[] {
     return ["locale", ...super.observedAttributes];
   }
 
   #config: DocsConfig<LocaleId, VersionId>;
   #setLocale: SetLocale;
-  #locale: LocaleId = <LocaleId>"en-x-dev";
-  #version: VersionId = <VersionId>"";
+  #getLocale: GetLocale;
+  #locale: LocaleId;
+  #version: VersionId;
   #enableUpdateState: boolean = false;
+  #titleElement: HTMLTitleElement = document.createElement("title");
+  #descriptionElement: HTMLMetaElement = document.createElement("meta");
 
   constructor(config: DocsConfig<LocaleId, VersionId>) {
     super();
     this.#config = config;
-    ({ setLocale: this.#setLocale } = this.#initLocale());
+    this.#locale = this.#config.defaultLocale;
+    this.#version = this.#config.defaultVersion;
     this.#initDocument();
+    ({ setLocale: this.#setLocale, getLocale: this.#getLocale } = this.#initLocale());
     this.#initState();
   }
 
@@ -43,35 +61,43 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
     const sourceTranslations = Object.entries(this.#config.localeTemplates).filter(([_, value]) => value === "source");
     if (sourceTranslations.length >= 2) throw new Error(`only one language can have the translation set to "source"`);
     const sourceLanguage = sourceTranslations[0]?.[0];
-    if (this.#isValidLocale(sourceLanguage)) this.#locale = sourceLanguage;
-    return { ...configureLocalization({ sourceLocale: this.#locale, targetLocales: ["de", "en"], loadLocale: this.#loadLocale.bind(this) }) };
+    let sourceLocale = "en-x-dev";
+    if (this.#isValidLocale(sourceLanguage)) sourceLocale = sourceLanguage;
+    const ret = configureLocalization({ sourceLocale, targetLocales: ["de", "en"], loadLocale: this.#loadLocale.bind(this) });
+    return ret;
   }
 
   #initDocument() {
-    const title = document.createElement("title");
-    title.innerText = this.#config.title;
-    document.head.appendChild(title);
+    document.head.appendChild(this.#titleElement);
+    this.#descriptionElement.name = "description";
+    document.head.appendChild(this.#descriptionElement);
     const metaViewport = document.createElement("meta");
     metaViewport.name = "viewport";
     metaViewport.content = "width=device-width, initial-scale=1";
     document.head.appendChild(metaViewport);
-    const metaDescription = document.createElement("meta");
-    metaDescription.name = "description";
-    metaDescription.content = this.#config.description;
-    document.head.appendChild(metaDescription);
     this.#setDocumentStyles();
     document.body.appendChild(this);
+    document.addEventListener("click", this.#interceptAnchorNavigation.bind(this));
   }
 
   #setDocumentStyles() {
     const styleSheet = css`
+      html, body {
+        height: 100%;
+        width: 100%;
+        margin: 0px;
+      }
     `.styleSheet;
     if (styleSheet === undefined) throw new Error("Error while creating Document Styles");
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
   }
 
   #initState() {
+    // Get values from URL for initial state
     this.#onPopState();
+    // Needs to be set again if language was not changed from default language
+    // It is a noop if the locale was set by onPopState()
+    this.#setLocale(this.#locale).catch(console.error);
     setUrlParams(this.#getState(), true);
     window.addEventListener("popstate", this.#onPopState.bind(this));
     this.#enableUpdateState = true;
@@ -84,7 +110,9 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
   }
 
   set locale(value: LocaleId | string | undefined | null) {
-    this.#locale = this.#getValidatedLocale(value);
+    const validated = this.#getValidatedLocale(value);
+    if (this.#locale === validated) return;
+    this.#locale = validated;
     if (this.getAttribute("locale") !== this.#locale) this.setAttribute("locale", this.#locale);
     this.#setLocale(this.#locale).catch(console.error);
     document.documentElement.setAttribute("lang", this.#locale);
@@ -104,11 +132,32 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
 
   @property({ reflect: true, converter: passThroughAttributeConverter })
   set version(value: VersionId | string | undefined | null) {
-    this.#version = this.#getValidatedVersion(value);
+    const validated = this.#getValidatedVersion(value);
+    if (this.#version === validated) return;
+    this.#version = validated;
     this.#updateState();
   }
   get version(): VersionId {
     return this.#version;
+  }
+
+  #updateState() {
+    if (!this.#enableUpdateState) return;
+    setUrlParams(this.#getState());
+  }
+
+  #onPopState(): void {
+    this.#setState(getUrlParams());
+  }
+
+  #setState(state: Partial<UrlParams>): void {
+    this.#enableUpdateState = false;
+    try {
+      if ("locale" in state) this.locale = state.locale;
+      if ("version" in state) this.version = state.version;
+    } finally {
+      this.#enableUpdateState = true;
+    }
   }
 
   #getState(): UrlParams {
@@ -118,20 +167,15 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
     };
   }
 
-  #updateState() {
-    if (!this.#enableUpdateState) return;
-    setUrlParams(this.#getState());
-  }
-
-  #onPopState(): void {
-    this.#enableUpdateState = false;
-    try {
-      const state = getUrlParams();
-      this.locale = state.locale;
-      this.version = state.version;
-    } finally {
-      this.#enableUpdateState = true;
-    }
+  #interceptAnchorNavigation(e: Event) {
+    if (this.#config.disableAnchorInterception) return;
+    const target = e.composedPath()[0];
+    if (!isElement(target, "a")) return;
+    const url = new URL(target.href);
+    if (url.origin !== location.origin || url.pathname !== location.pathname) return;
+    e.preventDefault();
+    this.#setState(searchParamsToObject(url));
+    this.#updateState();
   }
 
   #getValidatedLocale(locale: string | undefined | null): LocaleId {
@@ -155,51 +199,43 @@ class DocsMain<LocaleId extends string = string, VersionId extends string = stri
   override render(): TemplateResult {
     return html`
       <header>
+        <div class="fill"></div>
         ${this.#renderVersionSelector()}
         ${this.#renderLocaleSelector()}
       </header>
-      ${guard([this.locale, this.version], () => html`<docs-nav .docsDescription=${this.#config.versionTemplates[this.version]()}></docs-nav>`)}
+      ${this.#rerenderDocument()}
     `;
   }
 
-  #renderLocaleSelector(): DirectiveResult {
-    return guard([this.locale, this.#config.localeDisplayNames], () => {
-      const rendered = Object.entries<OrderedDisplayNamesElement>(this.#config.localeDisplayNames());
-      const sorted = rendered
-        .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
-        .sort((a, b) => a[1][0] - b[1][0]);
-      const selected = this.locale;
-      return html`
-        <select @change=${this.#onChangeLocale}>
-          ${repeat(sorted, (i) => i[0], (i) => html`<option value=${i[0]} .selected=${live(i[0] === selected)}>${i[1][1]}</option>`)}
-        </select>
-      `;
-    });
+  #rerenderDocument(): TemplateResult {
+    const template = this.#config.versionTemplates[this.version]();
+    this.#titleElement.innerText = template.title;
+    this.#descriptionElement.content = template.description;
+    return html`<docs-nav .docsDescription=${template}></docs-nav>`;
   }
 
-  #onChangeLocale(e: Event): void {
-    if (!isElement(e.currentTarget, "select")) return;
-    this.locale = e.currentTarget.value;
+  #renderLocaleSelectorCache = createCacheFunction();
+  #renderLocaleSelector(): TemplateResult {
+    const { array, map } = this.#renderLocaleSelectorCache([this.#getLocale()], () => sortDisplayNames(this.#config.localeDisplayNames));
+    const selected = this.locale;
+    return html`
+      <docs-select>
+        <span slot="selected">${map[selected].displayName}</span>
+        ${repeat(array, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selected })} href=${getUrlWithParams({ locale: id }).href}>${displayName}</a>`)}
+      </docs-select>
+    `;
   }
 
+  #renderVersionSelectorCache = createCacheFunction();
   #renderVersionSelector(): DirectiveResult {
-    return guard([this.version, this.#config.versionDisplayNames], () => {
-      const rendered = Object.entries<OrderedDisplayNamesElement>(this.#config.versionDisplayNames());
-      const sorted = rendered
-        .map((v) => typeof v[1] === "string" ? [v[0], [Number.MAX_SAFE_INTEGER, v[1]]] as const : [v[0], v[1]] as const)
-        .sort((a, b) => a[1][0] - b[1][0]);
-      const selected = this.version;
-      return html`
-        <select @change=${this.#onChangeVersion}>
-          ${repeat(sorted, (i) => i[0], (i) => html`<option value=${i[0]} .selected=${live(i[0] === selected)}>${i[1][1]}</option>`)}
-        </select>
-      `;
-    });
-  }
-
-  #onChangeVersion(e: Event): void {
-    if (!isElement(e.currentTarget, "select")) return;
-    this.version = e.currentTarget.value;
+    const { array, map } = this.#renderVersionSelectorCache([this.#getLocale(), this.version], () => sortDisplayNames(this.#config.versionDisplayNames));
+    const selected = this.version;
+    return html`
+      <docs-select>
+        <span slot="selected" href=${location.href}>${map[selected].displayName}</span>
+        ${repeat(array, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selected })} href=${getUrlWithParams({ version: id }).href}>${displayName}</a>`)}
+      </docs-select>
+    `;
   }
 }
 

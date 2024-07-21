@@ -2,7 +2,7 @@ import { tools, tasks } from "@iiimaddiniii/js-build-tool";
 
 async function writeHtmlFile() {
   await tools.fs.mkdir(tools.file("dist"), { recursive: true });
-  await tools.fs.writeFile(tools.file("dist/index.html"), `<!DOCTYPE html><html><head><script src="./index.js" defer></script></head></html>`);
+  await tools.fs.writeFile(tools.file("dist/index.html"), `<!DOCTYPE html><html><head><meta charset="UTF-8"><script src="./index.js" defer></script></head></html>`);
 }
 
 async function copyToDocs() {

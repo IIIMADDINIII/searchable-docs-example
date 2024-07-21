@@ -1,5 +1,5 @@
 import type { ComplexAttributeConverter } from "lit";
-import type { UrlParams } from "./types.js";
+import type { DisplayNamesArray, DisplayNamesMap, OrderedDisplayNames, OrderedDisplayNamesElement, UrlParams } from "./types.js";
 
 /**
  * Checking if Element is of a specific Type.
@@ -14,23 +14,64 @@ export function isElement<T extends keyof HTMLElementTagNameMap>(elem: EventTarg
   return true;
 }
 
-export function getUrlParams(): Partial<UrlParams> {
+export function searchParamsToObject(url: URL): Partial<UrlParams> {
   const result: { [key: string]: string; } = {};
-  (new URL(location.href)).searchParams.forEach((v, k) => result[k] = v);
+  (url).searchParams.forEach((v, k) => result[k] = v);
   return result;
 }
 
-export function setUrlParams(params: UrlParams, init: boolean = false): void {
-  const url = new URL(location.href);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+export function getUrlParams(): Partial<UrlParams> {
+  return searchParamsToObject(new URL(location.href));
+}
+
+export function setUrlParams(params: Partial<UrlParams>, init: boolean = false): void {
   if (init) {
-    window.history.replaceState(params, "", url);
+    window.history.replaceState(params, "", getUrlWithParams(params));
     return;
   }
-  window.history.pushState({}, "", url);
+  const keys = new Set(Object.keys(params));
+  for (const [key, value] of Object.entries(getUrlParams()) as [keyof UrlParams, string][]) {
+    keys.delete(key);
+    if (params[key] !== value) {
+      window.history.pushState({}, "", getUrlWithParams(params));
+      return;
+    }
+  }
+  if (keys.size === 0) return;
+  window.history.pushState({}, "", getUrlWithParams(params));
 };
+
+export function getUrlWithParams(params: Partial<UrlParams>): URL {
+  const url = new URL(location.href);
+  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  return url;
+}
 
 export const passThroughAttributeConverter: ComplexAttributeConverter<string | null> = {
   fromAttribute: (value) => value,
   toAttribute: (value) => value,
-}; 
+};
+
+export type DisplayNamesArrayAndMap<T extends string> = {
+  array: DisplayNamesArray<T>;
+  map: DisplayNamesMap<T>;
+};
+export function sortDisplayNames<T extends string>(names: OrderedDisplayNames<T>): DisplayNamesArrayAndMap<T> {
+  const array = (Object.entries(names()) as [T, OrderedDisplayNamesElement][])
+    .map((v) => typeof v[1] === "string" ? { id: v[0], order: Number.MAX_SAFE_INTEGER, displayName: v[1] } : { id: v[0], order: v[1][0], displayName: v[1][1] })
+    .sort((a, b) => a.order - b.order);
+  const map = Object.fromEntries(array.map((v) => [v.id, v])) as DisplayNamesMap<T>;
+  return { array, map };
+}
+
+export function createCacheFunction(): <T>(cacheKey: unknown[], fn: () => T) => T {
+  let cache: any;
+  let keys: unknown[] = [];
+  return function cacheFunction<T>(cacheKeys: unknown[], fn: () => T): T {
+    if (cacheKeys.length !== keys.length || cacheKeys.some((v, i) => v !== keys[i])) {
+      cache = fn();
+      keys = [...cacheKeys];
+    }
+    return cache;
+  };
+}

@@ -6,9 +6,7 @@ import type { DocsDescription } from "./types.js";
 export class DocsNav extends LitElement {
 
   @property({ attribute: false })
-  accessor docsDescription: DocsDescription = { displayName: "" };
-
-
+  accessor docsDescription: DocsDescription | undefined = undefined;
 
 }
 
