@@ -46,6 +46,8 @@ export class DocsSelect extends LitElement {
       padding: 8px;
       background-color: white; 
       border-radius: 4px;
+      text-decoration: none;
+      color: inherit;
     }
     ::slotted(:not([slot="selected"]).selected) {
       background-color: #EEE;
