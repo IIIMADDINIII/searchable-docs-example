@@ -18,9 +18,6 @@ export function templates(str: typeof import("@lit/localize").str, html: typeof 
 's4caed5b7a7e5d89b': `Englisch`,
 's5f43af3669b1e098': `Quelle`,
 's63e71d20d1eaca93': `Deutsch`,
-'sac4513d78f305333': `Suchbare Beispiel Doku v1`,
-'sac4514d78f3054e6': `Suchbare Beispiel Doku v2`,
-'sefcd57cb2edf16bb': `Beispiel Implementierung eines suchbaren Handbuches`,
     };
   cache = {templates};
   return cache;

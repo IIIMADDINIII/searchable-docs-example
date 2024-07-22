@@ -1,26 +1,23 @@
 
 import { msg } from "@lit/localize";
-import { docs } from "./base/main.js";
+import { init } from "./base/api.js";
 import * as de from "./locales/de.js";
 import * as en from "./locales/en.js";
 
-docs({
+init({
+  disableAnchorInterception: false,
+  locales() {
+    this.add({ id: "en", displayName: msg("English"), translation: en });
+    this.add({ id: "de", displayName: msg("German"), translation: de, default: true });
+    this.add({ id: "src", displayName: msg("Source"), translation: "source" });
+  },
+  versions() {
+    this.add({ id: "v1", displayName: msg("v1"), default: true });
+    this.add({ id: "v2", displayName: msg("v2") });
+  },
+  folder() {
 
-  defaultLocale: "de",
-  localeDisplayNames: () => ({ de: [2, msg("German")], en: [1, msg("English")], src: msg("Source") }),
-  localeTemplates: { de: de.templates, en: en.templates, src: "source" },
-
-  defaultVersion: "v1",
-  versionDisplayNames: () => ({ v1: [1, msg("v1")], v2: [1, msg("v2")] }),
-  versionTemplates: {
-    v1: () => ({
-      title: msg("searchable docs example v1"),
-      description: msg("Example implementation of a searchable manual")
-    }),
-    v2: () => ({
-      title: msg("searchable docs example v2"),
-      description: msg("Example implementation of a searchable manual")
-    }),
-  }
+  },
 });
+
 

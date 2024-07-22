@@ -1,5 +1,4 @@
 import type { ComplexAttributeConverter } from "lit";
-import type { DisplayNamesArray, DisplayNamesMap, OrderedDisplayNames, OrderedDisplayNamesElement, UrlParams } from "./types.js";
 
 /**
  * Checking if Element is of a specific Type.
@@ -14,17 +13,19 @@ export function isElement<T extends keyof HTMLElementTagNameMap>(elem: EventTarg
   return true;
 }
 
-export function searchParamsToObject(url: URL): Partial<UrlParams> {
+export type UrlParams = {
+  locale?: string | undefined;
+  version?: string | undefined;
+};
+export function searchParamsToObject(url: URL): UrlParams {
   const result: { [key: string]: string; } = {};
   (url).searchParams.forEach((v, k) => result[k] = v);
   return result;
 }
-
-export function getUrlParams(): Partial<UrlParams> {
+export function getUrlParams(): UrlParams {
   return searchParamsToObject(new URL(location.href));
 }
-
-export function setUrlParams(params: Partial<UrlParams>, init: boolean = false): void {
+export function setUrlParams(params: UrlParams, init: boolean = false): void {
   if (init) {
     window.history.replaceState(params, "", getUrlWithParams(params));
     return;
@@ -40,10 +41,9 @@ export function setUrlParams(params: Partial<UrlParams>, init: boolean = false):
   if (keys.size === 0) return;
   window.history.pushState({}, "", getUrlWithParams(params));
 };
-
-export function getUrlWithParams(params: Partial<UrlParams>): URL {
+export function getUrlWithParams(params: UrlParams): URL {
   const url = new URL(location.href);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  Object.entries(params).forEach(([k, v]) => v !== undefined ? url.searchParams.set(k, v) : undefined);
   return url;
 }
 
@@ -51,18 +51,6 @@ export const passThroughAttributeConverter: ComplexAttributeConverter<string | n
   fromAttribute: (value) => value,
   toAttribute: (value) => value,
 };
-
-export type DisplayNamesArrayAndMap<T extends string> = {
-  array: DisplayNamesArray<T>;
-  map: DisplayNamesMap<T>;
-};
-export function sortDisplayNames<T extends string>(names: OrderedDisplayNames<T>): DisplayNamesArrayAndMap<T> {
-  const array = (Object.entries(names()) as [T, OrderedDisplayNamesElement][])
-    .map((v) => typeof v[1] === "string" ? { id: v[0], order: Number.MAX_SAFE_INTEGER, displayName: v[1] } : { id: v[0], order: v[1][0], displayName: v[1][1] })
-    .sort((a, b) => a.order - b.order);
-  const map = Object.fromEntries(array.map((v) => [v.id, v])) as DisplayNamesMap<T>;
-  return { array, map };
-}
 
 export function createCacheFunction(): <T>(cacheKey: unknown[], fn: () => T) => T {
   let cache: any;
@@ -73,5 +61,21 @@ export function createCacheFunction(): <T>(cacheKey: unknown[], fn: () => T) => 
       keys = [...cacheKeys];
     }
     return cache;
+  };
+}
+
+export type Api<Results> = (locale: string | undefined) => Results;
+type ConfigFunction<This> = ((this: This) => void) | undefined;
+export function cachedPrivateApi<CF extends ConfigFunction<any>, Results>(fn: (fn: CF, locale: string | undefined) => Results): (configFunction: CF) => Api<Results> {
+  return function caching(configFunction: CF): Api<Results> {
+    let lastLocale: string | undefined = undefined;
+    let last: Results | undefined = undefined;
+    return function cached(locale: string | undefined): Results {
+      if (last === undefined || lastLocale !== locale || locale === undefined) {
+        last = fn(configFunction, locale);
+        lastLocale = locale;
+      }
+      return last;
+    };
   };
 }
