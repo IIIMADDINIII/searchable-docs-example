@@ -132,12 +132,12 @@
           <div class="fill"></div>
         </div>
       </main>
-    `}#b(){const t=this.#u,e=this.locale;return $t`
+    `}#b(){const t=this.#u;if(0===t.array.length)return $t``;const e=this.locale;return $t`
       <docs-select>
         <span slot="selected">${t.getDisplayName(e)}</span>
         ${ee(t.array,(({id:t,displayName:s})=>$t`<a class=${Gt({selected:t===e})} href=${ne({locale:t}).href}>${s}</a>`))}
       </docs-select>
-    `}#_(){const t=this.#y,e=this.version;return $t`
+    `}#_(){const t=this.#y;if(0===t.array.length)return $t``;const e=this.version;return $t`
       <docs-select>
         <span slot="selected">${t.getDisplayName(e)}</span>
         ${ee(t.array,(({id:t,displayName:s})=>$t`<a class=${Gt({selected:t===e})} href=${ne({version:t}).href}>${s}</a>`))}

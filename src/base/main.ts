@@ -246,6 +246,7 @@ export class DocsMain extends LitElement {
 
   #renderLocaleSelector(): TemplateResult {
     const config = this.#localeConfig;
+    if (config.array.length === 0) return html``;
     const selected = this.locale;
     return html`
       <docs-select>
@@ -257,6 +258,7 @@ export class DocsMain extends LitElement {
 
   #renderVersionSelector(): DirectiveResult {
     const config = this.#versionConfig;
+    if (config.array.length === 0) return html``;
     const selected = this.version;
     return html`
       <docs-select>
