@@ -1,3 +1,5 @@
+import { html, nothing, type TemplateResult } from "lit";
+import { join } from "lit/directives/join.js";
 
 /**
  * Checking if Element is of a specific Type.
@@ -78,3 +80,47 @@ export function getUrlWithParams(params: UrlParams): URL {
  * ```() => msg("Hello World")```
  */
 export type RenderDisplayName = () => string;
+
+export type LocaleAndVersionInApi = {
+  /**
+   * The currently rendered locale.
+   * Is undefined when no locales are definit in init.
+   */
+  readonly locale: string | undefined;
+  /**
+   *  The currently rendered version.
+   * Is undefined when no version are definit in init.
+   */
+  readonly version: string | undefined;
+};
+
+/**
+ * cleans and formats the error stack.
+ * @param error - error from wich the stack should be processed.
+ * @returns the cleaned stack as html.
+ */
+function processErrorStack(error: Error): TemplateResult | typeof nothing {
+  let stack = error.stack;
+  if (stack === undefined) return nothing;
+  const prefix = `${error.name}: ${error.message}`;
+  if (stack.startsWith(prefix)) stack = stack.slice(prefix.length);
+  const lines = stack.trim().split(/\r?\n+/);
+  return html`${join(lines.map((v) => v.trim()), () => html`<br>`)}`;
+}
+
+/**
+ * Used to render an error to the Document.
+ * @param error - the Error to show.
+ */
+export function renderError(error: unknown, errorMessagePrefix: string = ""): TemplateResult {
+  if (error instanceof Error) {
+    return html`
+      <div style="height: 100%; width: 100%; background-color: red; color: yellow; padding: 8px;">
+        <h1 style="margin-bottom: 0px;">${errorMessagePrefix}${error.name}: ${error.message}</h1>
+        ${error.stack ? html`<div style="padding: 8px; padding-left: 24px;">${processErrorStack(error)}</div>` : nothing}
+        ${error.cause ? error.cause instanceof Error ? renderError(error.cause, "Caused by: ") : html`<h1 style="margin-bottom: 0px;">Caused by: ${error.cause}</h1>` : nothing}
+      </div>
+    `;
+  }
+  return html`<div style="height: 100%; width: 100%; background-color: red; color: yellow"><h1>Error: ${error}</h1></div>`;
+}

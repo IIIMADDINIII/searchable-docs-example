@@ -1,4 +1,5 @@
 import { type LocaleModule } from "@lit/localize";
+import { getRenderEntrypoint, type EntrypointFunction, type RenderEntrypoint } from "./entrypointApi.js";
 import type { RenderDisplayName } from "./utils.js";
 
 /**
@@ -50,7 +51,7 @@ type VersionItem = {
 
 /**
  * Result of calling the init Render Method.
- * Contains all the Information config information.
+ * Contains all the Information of a config.
  */
 export type InitResult = {
   /**
@@ -90,13 +91,9 @@ export type InitResult = {
    */
   defaultVersion: string | undefined;
   /**
-   * Function to render the general Title.
+   * Function to render the documentation.
    */
-  title: RenderDisplayName;
-  /**
-   * Function to render the general Description.
-   */
-  description: RenderDisplayName;
+  entrypoint: RenderEntrypoint;
   /**
    * Do not intercept Anchor Tag Navigations.
    */
@@ -180,9 +177,10 @@ export type InitApi = {
    */
   addVersion(options: VersionApiAddOptions): void;
   /**
-   * Set a General Title and Description for the App.
+   * Sets the entrypoint for the Documentation.
+   * @param docs - the entrypoint of the Documentation.
    */
-  title(title: RenderDisplayName, description: RenderDisplayName): void;
+  docs(docs: EntrypointFunction): void;
   /**
    * Disable Anchor tag interception.
    * Will do a page load on every navigation.
@@ -207,8 +205,7 @@ export function getRenderInit(configFunction: InitFunction): RenderInit {
     const versionsArray: VersionItem[] = [];
     const versionsMap: Map<string, VersionItem> = new Map();
     let defaultVersion: string | undefined = undefined;
-    let title: RenderDisplayName | undefined = undefined;
-    let description: RenderDisplayName | undefined = undefined;
+    let entrypoint: RenderEntrypoint | undefined = undefined;
     let disableAnchorInterception = false;
     // Define the Api functions
     const api: InitApi = {
@@ -247,10 +244,9 @@ export function getRenderInit(configFunction: InitFunction): RenderInit {
         versionsMap.set(item.id, item);
         versionsDefined = true;
       },
-      title(t, d) {
-        if (title !== undefined || description !== undefined) throw new Error("title and description was already defined previously");
-        title = t;
-        description = d;
+      docs(d) {
+        if (entrypoint !== undefined) throw new Error("docs was already defined previously");
+        entrypoint = getRenderEntrypoint(d);
       },
       debugDisableAnchorInterception() {
         disableAnchorInterception = true;
@@ -261,7 +257,7 @@ export function getRenderInit(configFunction: InitFunction): RenderInit {
     // Validate Config
     if (defaultLocale === undefined && localesDefined) throw new Error("There must be at least one default locale");
     if (defaultVersion === undefined && versionsDefined) throw new Error("There must be at least one default version");
-    if (title === undefined || description === undefined) throw new Error("You need to set a Title and description using this.title in the init function");
+    if (entrypoint === undefined) throw new Error("You need to set a Documentation entrypoint using this.docs in the init function");
     // Return result
     return {
       localesDefined,
@@ -273,8 +269,7 @@ export function getRenderInit(configFunction: InitFunction): RenderInit {
       versionsArray,
       versionsMap,
       defaultVersion,
-      title,
-      description,
+      entrypoint,
       disableAnchorInterception,
     };
   }

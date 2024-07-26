@@ -9,11 +9,16 @@ async function copyToDocs() {
   await tools.fs.cp(tools.file("dist"), tools.file("docs"), { recursive: true });
 }
 
+/**
+ * @type import("@iiimaddiniii/js-build-tool").ConfigOpts
+ */
+const rollupConfig = { type: "app", environment: "browser", sourceMapType: "inline" };
+
 export const build = tools.exitAfter(
   tasks.installDependencies(),
   tasks.buildTranslationSource(),
   tools.parallel(
-    tasks.rollup.build({ type: "app", environment: "browser" }),
+    tasks.rollup.build(rollupConfig),
     writeHtmlFile));
 
 export const buildCi = tools.exitAfter(
@@ -21,7 +26,7 @@ export const buildCi = tools.exitAfter(
   tasks.prodInstallDependencies(),
   tasks.buildTranslationSource(),
   tools.parallel(
-    tasks.rollup.build({ type: "app", environment: "browser" }),
+    tasks.rollup.build(rollupConfig),
     writeHtmlFile),
   copyToDocs);
 

@@ -8,7 +8,7 @@ import "./document";
 import type { InitResult } from "./initApi.js";
 import "./nav";
 import "./select";
-import { getUrlParams, getUrlWithParams, isElement, searchParamsToObject, setUrlParams, type UrlParams } from "./utils.js";
+import { getUrlParams, getUrlWithParams, isElement, renderError, searchParamsToObject, setUrlParams, type UrlParams } from "./utils.js";
 
 export type GetLocale = () => string;
 export type SetLocale = (newLocale: string) => Promise<void>;
@@ -59,6 +59,7 @@ export class DocsMain extends LitElement {
 
   #config: InitResult;
   #setLocale: SetLocale;
+  #getLocale: GetLocale;
   #locale: string | undefined = undefined;
   #version: string | undefined = undefined;
   #enableUpdateState: boolean = false;
@@ -69,7 +70,7 @@ export class DocsMain extends LitElement {
     super();
     this.#config = options;
     this.#initDocument();
-    ({ setLocale: this.#setLocale } = this.#initLocale());
+    ({ setLocale: this.#setLocale, getLocale: this.#getLocale } = this.#initLocale());
     this.#initState();
   }
 
@@ -105,21 +106,7 @@ export class DocsMain extends LitElement {
     metaViewport.name = "viewport";
     metaViewport.content = "width=device-width, initial-scale=1";
     document.head.appendChild(metaViewport);
-    this.#setDocumentStyles();
-    document.body.appendChild(this);
     document.addEventListener("click", this.#interceptAnchorNavigation.bind(this));
-  }
-
-  #setDocumentStyles() {
-    const styleSheet = css`
-      html, body {
-        height: 100%;
-        width: 100%;
-        margin: 0px;
-      }
-    `.styleSheet;
-    if (styleSheet === undefined) throw new Error("Error while creating Document Styles");
-    document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
   }
 
   #initState() {
@@ -217,19 +204,25 @@ export class DocsMain extends LitElement {
   }
 
   override render(): TemplateResult {
-    return html`
-      <header>
-        <div class="fill"></div>
-        ${this.#renderVersionSelector()}
-        ${this.#renderLocaleSelector()}
-      </header>
-      ${this.#rerenderDocument()}
-    `;
+    try {
+      return html`
+        <header>
+          <div class="fill"></div>
+          ${this.#renderVersionSelector()}
+          ${this.#renderLocaleSelector()}
+        </header>
+        ${this.#rerenderDocument()}
+      `;
+    } catch (error) {
+      console.error(error);
+      return renderError(error);
+    }
   }
 
   #rerenderDocument(): TemplateResult {
-    this.#titleElement.innerText = this.#config.title();
-    this.#descriptionElement.content = this.#config.description();
+    const entrypoint = this.#config.entrypoint(this.#getLocale(), this.version);
+    this.#titleElement.innerText = entrypoint.title;
+    this.#descriptionElement.content = entrypoint.description;
     return html`
       <main>
         <div class="fill"></div>
