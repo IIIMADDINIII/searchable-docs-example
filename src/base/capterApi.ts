@@ -1,3 +1,4 @@
+import type { EntrypointResults } from "./entrypointApi.js";
 import type { LocaleAndVersionInApi } from "./utils.js";
 
 
@@ -12,9 +13,26 @@ export type ChapterFunction = (this: ChapterApi) => void;
  */
 export type ChapterResults = {
   /**
+   * Id of this chapter used for linking
+   */
+  id: string;
+  /**
+   * full id of the chapter.
+   * this is a list of all ids down to this id joined by "*". 
+   */
+  fullId: string;
+  /**
    * Title of this chapter.
    */
   title: string;
+  /**
+   * An array of all chapters in the entrypoint in the order in wich there where defined.
+   */
+  chapterArray: ChapterResults[];
+  /**
+   * A Map from Chapter ID to Chapter.
+   */
+  chapterMap: Map<string, ChapterResults>;
 };
 
 /**
@@ -28,38 +46,61 @@ export type RenderChapter = (locale: string, version: string) => ChapterResults;
  */
 export type ChapterApi = LocaleAndVersionInApi & {
   /**
-   * Set 
-   * @param title 
+   * Set the Id and Title of the chapter.
+   * @param id - the id of the chapter used to link to this chapter.
+   * @param title - name of the chapter.
    */
-  title(title: string): void;
+  title(id: string, title: string): void;
+  /**
+   * Add a chapter to the entrypoint.
+   * @param chapter - function describing the chapter.
+   */
+  addChapter(chapter: ChapterFunction): void;
 };
-
 
 /**
  * This is generating the RenderChapter function for a given configFunction.
  * @param configFunction - the ConfigFunction to create a Render Function for.
  * @returns the Render Function.
  */
-export function getRenderChapter(configFunction: ChapterFunction): RenderChapter {
-  return function update(locale: string | undefined, version: string | undefined): ChapterResults {
-    // Define variables for the result
-    let title: string | undefined = undefined;
-    // Define the Api functions
-    const api: ChapterApi = {
-      locale,
-      version,
-      title(t) {
-        if (title !== undefined) throw new Error("title was already defined previously");
-        title = t;
-      },
-    };
-    // Call the Config Function with the Api
-    configFunction.call(api);
-    // Validate Config
-    if (title === undefined) throw new Error("You need to set a Title using this.title in the chapter function");
-    // Return result
-    return {
-      title,
-    };
+export function renderChapter(configFunction: ChapterFunction, locale: string | undefined, version: string | undefined, parent: ChapterResults | EntrypointResults): ChapterResults {
+  // Define variables for the result
+  let id: string | undefined = undefined;
+  let title: string | undefined = undefined;
+  const chapterFunctions: ChapterFunction[] = [];
+  const chapterArray: ChapterResults[] = [];
+  const chapterMap: Map<string, ChapterResults> = new Map();
+  // Define the Api functions
+  const api: ChapterApi = {
+    locale,
+    version,
+    title(i, t) {
+      if (title !== undefined || id !== undefined) throw new Error("title was already defined previously");
+      id = i;
+      title = t;
+    },
+    addChapter(chapter) {
+      chapterFunctions.push(chapter);
+    },
   };
+  // Call the Config Function with the Api
+  configFunction.call(api);
+  // Validate Config
+  if (title === undefined || id === undefined) throw new Error("You need to set a Id and Title using this.title in the chapter function");
+  // Return value
+  const result: ChapterResults = {
+    id,
+    fullId: "fullId" in parent ? `${parent.fullId}*${id}` : id,
+    title,
+    chapterArray,
+    chapterMap,
+  };
+  // render Chapters
+  for (const chapterFunction of chapterFunctions) {
+    const chapter = renderChapter(chapterFunction, locale, version, result);
+    if (chapterMap.has(chapter.id)) throw new Error(`Chapter with id ${chapter.id} already exists (${chapter.fullId})`);
+    chapterArray.push(chapter);
+    chapterMap.set(chapter.id, chapter);
+  }
+  return result;
 };

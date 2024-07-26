@@ -226,7 +226,7 @@ export class DocsMain extends LitElement {
     return html`
       <main>
         <div class="fill"></div>
-        <docs-document></docs-document>
+        <docs-document .document=${entrypoint}></docs-document>
         <div class="fill"></div>
       </main>
     `;

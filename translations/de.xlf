@@ -22,6 +22,26 @@
   <source>v2</source>
   <target state="translated">v2</target>
 </trans-unit>
+<trans-unit id="sce3cbe891a9f883b">
+  <source>Test Chapter 1</source>
+  <target state="translated">Test Kapitel 1</target>
+</trans-unit>
+<trans-unit id="sce3cbf891a9f89ee">
+  <source>Test Chapter 2</source>
+  <target state="translated">Test Kapitel 2</target>
+</trans-unit>
+<trans-unit id="s961172c8f7618b07">
+  <source>Test SubChapter 1</source>
+  <target state="translated">Test Unterkapitel 1</target>
+</trans-unit>
+<trans-unit id="s595af87ad03941c2">
+  <source>Searchable Docs Example</source>
+  <target state="translated">Durchsuchbare Doku Beispiel</target>
+</trans-unit>
+<trans-unit id="s06e67f7289d18c70">
+  <source>An Example of a searchable Documentation</source>
+  <target state="translated">Ein Beispiel einer durchsuchbaren Dokumentation</target>
+</trans-unit>
 </body>
 </file>
 </xliff>

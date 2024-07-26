@@ -1,3 +1,4 @@
+import { renderChapter, type ChapterFunction, type ChapterResults } from "./capterApi.js";
 import type { LocaleAndVersionInApi } from "./utils.js";
 
 
@@ -5,6 +6,11 @@ import type { LocaleAndVersionInApi } from "./utils.js";
  * Function to configure a chapter with its options.
  */
 export type EntrypointFunction = (this: EntrypointApi) => void;
+
+/**
+ * List of types wich can be targeted with an id
+ */
+export type IdTargets = ChapterResults;
 
 /**
  * Result of calling the chapter Render Method.
@@ -19,6 +25,14 @@ export type EntrypointResults = {
    * Function to render the general Description.
    */
   description: string;
+  /**
+   * An array of all chapters in the entrypoint in the order in wich there where defined.
+   */
+  chapterArray: ChapterResults[];
+  /**
+   * A Map from Chapter ID to Chapter.
+   */
+  chapterMap: Map<string, ChapterResults>;
 };
 
 /**
@@ -37,6 +51,11 @@ export type EntrypointApi = LocaleAndVersionInApi & {
    * @param description - Description of the App.
    */
   title(title: string, description: string): void;
+  /**
+   * Add a chapter to the entrypoint.
+   * @param chapter - function describing the chapter.
+   */
+  addChapter(chapter: ChapterFunction): void;
 };
 
 /**
@@ -49,7 +68,9 @@ export function getRenderEntrypoint(configFunction: EntrypointFunction): RenderE
     // Define variables for the result
     let title: string | undefined = undefined;
     let description: string | undefined = undefined;
-
+    const chapterFunctions: ChapterFunction[] = [];
+    const chapterArray: ChapterResults[] = [];
+    const chapterMap: Map<string, ChapterResults> = new Map();
     // Define the Api functions
     const api: EntrypointApi = {
       locale,
@@ -59,16 +80,30 @@ export function getRenderEntrypoint(configFunction: EntrypointFunction): RenderE
         title = t;
         description = d;
       },
+      addChapter(chapter) {
+        chapterFunctions.push(chapter);
+      }
     };
     // Call the Config Function with the Api
     configFunction.call(api);
     // Validate Config
     if (title === undefined || description === undefined) throw new Error("You need to set a Title and description using this.title in the init function");
-    // Return result
-    return {
+    if (chapterFunctions.length === 0) throw new Error("You need to add at least one chapter to the entrypoint using this.addChapter in the init function");
+    // Return Value
+    const result: EntrypointResults = {
       title,
       description,
+      chapterArray,
+      chapterMap,
     };
+    // render Chapters
+    for (const chapterFunction of chapterFunctions) {
+      const chapter = renderChapter(chapterFunction, locale, version, result);
+      if (chapterMap.has(chapter.id)) throw new Error(`Chapter with id ${chapter.id} already exists (${chapter.fullId})`);
+      chapterArray.push(chapter);
+      chapterMap.set(chapter.id, chapter);
+    }
+    return result;
   }
   // Caching
   let lastLocale: string | undefined = undefined;

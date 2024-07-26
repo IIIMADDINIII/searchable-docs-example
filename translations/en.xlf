@@ -4,23 +4,33 @@
 <body>
 <trans-unit id="s63e71d20d1eaca93">
   <source>German</source>
-  <target state="translated">German</target>
 </trans-unit>
 <trans-unit id="s4caed5b7a7e5d89b">
   <source>English</source>
-  <target state="translated">English</target>
 </trans-unit>
 <trans-unit id="s08cf0b07b5709128">
   <source>v1</source>
-  <target state="translated">v1</target>
 </trans-unit>
 <trans-unit id="s5f43af3669b1e098">
   <source>Source</source>
-  <target state="translated">Source</target>
 </trans-unit>
 <trans-unit id="s08cf0e07b5709641">
   <source>v2</source>
-  <target state="translated">v2</target>
+</trans-unit>
+<trans-unit id="sce3cbe891a9f883b">
+  <source>Test Chapter 1</source>
+</trans-unit>
+<trans-unit id="sce3cbf891a9f89ee">
+  <source>Test Chapter 2</source>
+</trans-unit>
+<trans-unit id="s961172c8f7618b07">
+  <source>Test SubChapter 1</source>
+</trans-unit>
+<trans-unit id="s595af87ad03941c2">
+  <source>Searchable Docs Example</source>
+</trans-unit>
+<trans-unit id="s06e67f7289d18c70">
+  <source>An Example of a searchable Documentation</source>
 </trans-unit>
 </body>
 </file>
