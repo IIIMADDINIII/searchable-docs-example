@@ -1,24 +1,18 @@
-import { configureLocalization, localized } from "@lit/localize";
+import { configureLocalization, localized, str, type LocaleModule } from "@lit/localize";
 import { css, html, LitElement, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import type { DirectiveResult } from "lit/directive.js";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import "./document";
+import type { InitResult } from "./initApi.js";
 import "./nav";
-import type { LocalesResults, VersionsResults } from "./private.js";
 import "./select";
-import { getUrlParams, getUrlWithParams, isElement, passThroughAttributeConverter, searchParamsToObject, setUrlParams, type Api, type UrlParams } from "./utils.js";
+import { getUrlParams, getUrlWithParams, isElement, searchParamsToObject, setUrlParams, type UrlParams } from "./utils.js";
 
 export type GetLocale = () => string;
 export type SetLocale = (newLocale: string) => Promise<void>;
 export type GetSetLocale = { getLocale: GetLocale; setLocale: SetLocale; };
-
-type DocsMainOptions = {
-  locales: Api<LocalesResults>;
-  versions: Api<VersionsResults>;
-  disableAnchorInterception: boolean;
-};
 
 @customElement("docs-main")
 @localized()
@@ -41,20 +35,8 @@ export class DocsMain extends LitElement {
       main {
         display: flex;
         flex-grow: 1;
-        docs-nav {
-          flex: 0 1 400px;
-          min-width: 200px;
-          display: none;
-          overflow-y: auto;
-          border-right: 1px solid black;
-        }
-        &>div {
-          display: flex;
-          flex: 1 1 1000px;
-          overflow-y: auto;
-          docs-document {
-            flex: 0 1 1000px;
-          }
+        docs-document {
+          flex: 0 1 1000px;
         }
       }
       .fill {
@@ -75,31 +57,44 @@ export class DocsMain extends LitElement {
     return ["locale", ...super.observedAttributes];
   }
 
-  #options: DocsMainOptions;
+  #config: InitResult;
   #setLocale: SetLocale;
-  #getLocale: GetLocale;
   #locale: string | undefined = undefined;
   #version: string | undefined = undefined;
   #enableUpdateState: boolean = false;
   #titleElement: HTMLTitleElement = document.createElement("title");
   #descriptionElement: HTMLMetaElement = document.createElement("meta");
 
-  constructor(options: DocsMainOptions) {
+  constructor(options: InitResult) {
     super();
-    this.#options = options;
+    this.#config = options;
     this.#initDocument();
-    ({ setLocale: this.#setLocale, getLocale: this.#getLocale } = this.#initLocale());
+    ({ setLocale: this.#setLocale } = this.#initLocale());
     this.#initState();
   }
 
   #initLocale(): GetSetLocale {
-    const config = this.#options.locales(undefined);
-    if (config.array.length === 0) return {
+    if (!this.#config.localesDefined) return {
       setLocale: () => Promise.resolve(),
       getLocale: () => "",
     };
-    this.#locale = config.source;
-    return configureLocalization({ sourceLocale: this.#locale, targetLocales: config.targets, loadLocale: async (locale) => this.#localeConfig.getTemplate(locale) });
+    let sourceLocale = "-en-x-dev";
+    if (this.#config.sourceLocale !== undefined) {
+      sourceLocale = this.#config.sourceLocale;
+      this.#locale = sourceLocale;
+    }
+    const targetLocales = [...this.#config.localesMap.keys()];
+    return configureLocalization({ sourceLocale, targetLocales, loadLocale: this.#loadLocale.bind(this) });
+  }
+
+  async #loadLocale(locale: string): Promise<LocaleModule> {
+    const validated = this.#getValidatedLocale(locale);
+    if (validated === undefined) throw new Error("Should never happen");
+    const item = this.#config.localesMap.get(validated);
+    if (item === undefined) throw new Error("Should never happen");
+    const translation = item.translation;
+    if (translation === "source") throw new Error("Should never happen");
+    return translation.templates(str, html);
   }
 
   #initDocument() {
@@ -139,7 +134,7 @@ export class DocsMain extends LitElement {
   }
 
   set locale(value: string | undefined | null) {
-    const validated = this.#localeConfig.getValidated(value);
+    const validated = this.#getValidatedLocale(value);
     if (this.#locale === validated) return;
     if (validated === undefined) throw new Error("Should never happen");
     this.#locale = validated;
@@ -152,6 +147,12 @@ export class DocsMain extends LitElement {
     return this.#locale;
   }
 
+  #getValidatedLocale(locale: string | undefined | null): string | undefined {
+    if (!this.#config.localesDefined) return undefined;
+    if (locale === undefined || locale === null) return this.#config.defaultLocale;
+    return locale;
+  }
+
   override attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
     if (name === "locale") {
       this.locale = value;
@@ -160,13 +161,9 @@ export class DocsMain extends LitElement {
     super.attributeChangedCallback(name, _old, value);
   }
 
-  get #localeConfig(): LocalesResults {
-    return this.#options.locales(this.#getLocale());
-  }
-
-  @property({ reflect: true, converter: passThroughAttributeConverter })
+  @property({ reflect: true })
   set version(value: string | undefined | null) {
-    const validated = this.#versionConfig.getValidated(value);
+    const validated = this.#getValidatedVersion(value);
     if (this.#version === validated) return;
     if (validated === undefined) throw new Error("Should never happen");
     this.#version = validated;
@@ -176,8 +173,10 @@ export class DocsMain extends LitElement {
     return this.#version;
   }
 
-  get #versionConfig(): VersionsResults {
-    return this.#options.versions(this.#getLocale());
+  #getValidatedVersion(version: string | undefined | null): string | undefined {
+    if (!this.#config.versionsDefined) return undefined;
+    if (version === undefined || version === null) return this.#config.defaultVersion;
+    return version;
   }
 
   #updateState() {
@@ -207,7 +206,7 @@ export class DocsMain extends LitElement {
   }
 
   #interceptAnchorNavigation(e: Event) {
-    if (this.#options.disableAnchorInterception) return;
+    if (this.#config.disableAnchorInterception) return;
     const target = e.composedPath()[0];
     if (!isElement(target, "a")) return;
     const url = new URL(target.href);
@@ -229,41 +228,37 @@ export class DocsMain extends LitElement {
   }
 
   #rerenderDocument(): TemplateResult {
-    const template = { title: "test", description: "test" };
-    this.#titleElement.innerText = template.title;
-    this.#descriptionElement.content = template.description;
+    this.#titleElement.innerText = this.#config.title();
+    this.#descriptionElement.content = this.#config.description();
     return html`
       <main>
-        <docs-nav .docsDescription=${template}></docs-nav>
-        <div>
-          <div class="fill"></div>
-          <docs-document .docsDescription=${template}></docs-document>
-          <div class="fill"></div>
-        </div>
+        <div class="fill"></div>
+        <docs-document></docs-document>
+        <div class="fill"></div>
       </main>
     `;
   }
 
   #renderLocaleSelector(): TemplateResult {
-    const config = this.#localeConfig;
-    if (config.array.length === 0) return html``;
-    const selected = this.locale;
+    if (!this.#config.localesDefined || this.locale === undefined) return html``;
+    const selectedItem = this.#config.localesMap.get(this.locale);
+    if (selectedItem === undefined) return html``;
     return html`
       <docs-select>
-        <span slot="selected">${config.getDisplayName(selected)}</span>
-        ${repeat(config.array, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selected })} href=${getUrlWithParams({ locale: id }).href}>${displayName}</a>`)}
+        <span slot="selected">${selectedItem.displayName()}</span>
+        ${repeat(this.#config.localesArray, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selectedItem.id })} href=${getUrlWithParams({ locale: id }).href}>${displayName()}</a>`)}
       </docs-select>
     `;
   }
 
   #renderVersionSelector(): DirectiveResult {
-    const config = this.#versionConfig;
-    if (config.array.length === 0) return html``;
-    const selected = this.version;
+    if (!this.#config.versionsDefined || this.version === undefined) return html``;
+    const selectedItem = this.#config.versionsMap.get(this.version);
+    if (selectedItem === undefined) return html``;
     return html`
       <docs-select>
-        <span slot="selected">${config.getDisplayName(selected)}</span>
-        ${repeat(config.array, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selected })} href=${getUrlWithParams({ version: id }).href}>${displayName}</a>`)}
+        <span slot="selected">${selectedItem.displayName()}</span>
+        ${repeat(this.#config.versionsArray, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selectedItem.id })} href=${getUrlWithParams({ version: id }).href}>${displayName()}</a>`)}
       </docs-select>
     `;
   }

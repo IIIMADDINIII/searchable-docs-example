@@ -1,4 +1,3 @@
-import type { ComplexAttributeConverter } from "lit";
 
 /**
  * Checking if Element is of a specific Type.
@@ -13,20 +12,40 @@ export function isElement<T extends keyof HTMLElementTagNameMap>(elem: EventTarg
   return true;
 }
 
+/**
+ * Definition of the used URL Parameters as an object.
+ */
 export type UrlParams = {
   locale?: string | undefined;
   version?: string | undefined;
 };
+
+/**
+ * Convert the Search params of an URL to the Object representation.
+ * @param url - the URL to convert.
+ * @returns the Object with all the Search params.
+ */
 export function searchParamsToObject(url: URL): UrlParams {
   const result: { [key: string]: string; } = {};
   (url).searchParams.forEach((v, k) => result[k] = v);
   return result;
 }
+
+/**
+ * Get the Search params as an object of the current URL.
+ * @returns the Object with all the Search params of the current url.
+ */
 export function getUrlParams(): UrlParams {
   return searchParamsToObject(new URL(location.href));
 }
-export function setUrlParams(params: UrlParams, init: boolean = false): void {
-  if (init) {
+
+/**
+ * Set the Search params in the current url.
+ * @param params - an object with all the params to set.
+ * @param replace - should it replace the current location in the history.
+ */
+export function setUrlParams(params: UrlParams, replace: boolean = false): void {
+  if (replace) {
     window.history.replaceState(params, "", getUrlWithParams(params));
     return;
   }
@@ -41,41 +60,21 @@ export function setUrlParams(params: UrlParams, init: boolean = false): void {
   if (keys.size === 0) return;
   window.history.pushState({}, "", getUrlWithParams(params));
 };
+
+/**
+ * Calculates a url based on the current url with all the params applied.
+ * @param params - the params to apply to the current URL.
+ * @returns the URL including the new state provided py params.
+ */
 export function getUrlWithParams(params: UrlParams): URL {
   const url = new URL(location.href);
   Object.entries(params).forEach(([k, v]) => v !== undefined ? url.searchParams.set(k, v) : undefined);
   return url;
 }
 
-export const passThroughAttributeConverter: ComplexAttributeConverter<string | null> = {
-  fromAttribute: (value) => value,
-  toAttribute: (value) => value,
-};
-
-export function createCacheFunction(): <T>(cacheKey: unknown[], fn: () => T) => T {
-  let cache: any;
-  let keys: unknown[] = [];
-  return function cacheFunction<T>(cacheKeys: unknown[], fn: () => T): T {
-    if (cacheKeys.length !== keys.length || cacheKeys.some((v, i) => v !== keys[i])) {
-      cache = fn();
-      keys = [...cacheKeys];
-    }
-    return cache;
-  };
-}
-
-export type Api<Results> = (locale: string | undefined) => Results;
-type ConfigFunction<This> = ((this: This) => void) | undefined;
-export function cachedPrivateApi<CF extends ConfigFunction<any>, Results>(fn: (fn: CF, locale: string | undefined) => Results): (configFunction: CF) => Api<Results> {
-  return function caching(configFunction: CF): Api<Results> {
-    let lastLocale: string | undefined = undefined;
-    let last: Results | undefined = undefined;
-    return function cached(locale: string | undefined): Results {
-      if (last === undefined || lastLocale !== locale || locale === undefined) {
-        last = fn(configFunction, locale);
-        lastLocale = locale;
-      }
-      return last;
-    };
-  };
-}
+/**
+ * Function is called whenever the locale changes to update the text.
+ * Code in the form of the following should be enough for most cases.
+ * ```() => msg("Hello World")```
+ */
+export type RenderDisplayName = () => string;

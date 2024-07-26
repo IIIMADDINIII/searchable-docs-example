@@ -4,20 +4,14 @@ import { init } from "./base/api.js";
 import * as de from "./locales/de.js";
 import * as en from "./locales/en.js";
 
-init({
-  disableAnchorInterception: false,
-  locales() {
-    this.add({ id: "en", displayName: msg("English"), translation: en });
-    this.add({ id: "de", displayName: msg("German"), translation: de, default: true });
-    this.add({ id: "src", displayName: msg("Source"), translation: "source" });
-  },
-  versions() {
-    this.add({ id: "v1", displayName: msg("v1"), default: true });
-    this.add({ id: "v2", displayName: msg("v2") });
-  },
-  folder() {
 
-  },
+
+init(function () {
+  this.title(() => msg("Searchable Docs Example"), () => msg("An Example of a searchable Documentation"));
+  this.addLocale({ id: "en", displayName: () => msg("English"), translation: en });
+  this.addLocale({ id: "de", displayName: () => msg("German"), translation: de, default: true });
+  this.addLocale({ id: "src", displayName: () => msg("Source"), translation: "source" });
+
+  this.addVersion({ id: "v1", displayName: () => msg("v1"), default: true });
+  this.addVersion({ id: "v2", displayName: () => msg("v2") });
 });
-
-
