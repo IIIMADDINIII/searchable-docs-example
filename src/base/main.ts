@@ -79,11 +79,7 @@ export class DocsMain extends LitElement {
       setLocale: () => Promise.resolve(),
       getLocale: () => "",
     };
-    let sourceLocale = "-en-x-dev";
-    if (this.#config.sourceLocale !== undefined) {
-      sourceLocale = this.#config.sourceLocale;
-      this.#locale = sourceLocale;
-    }
+    let sourceLocale = this.#config.sourceLocale ?? "en-x-dev";
     const targetLocales = [...this.#config.localesMap.keys()];
     return configureLocalization({ sourceLocale, targetLocales, loadLocale: this.#loadLocale.bind(this) });
   }
