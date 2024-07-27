@@ -2,7 +2,7 @@
     // Do not modify this file by hand!
     // Re-generate this file by running lit-localize
 
-    
+
     
 
     /* eslint-disable no-irregular-whitespace */
@@ -14,7 +14,9 @@ export function templates(str: typeof import("@lit/localize").str, html: typeof 
   if (cache !== undefined) return cache;
   const templates = {
       'sce3cbe891a9f883b': `Test Chapter 1`,
+'h74e9cdd7def4f5c4': html`Some content including <b>styling</b>.`,
 'sce3cbf891a9f89ee': `Test Chapter 2`,
+'h6805b634ad1937cb': html`This includes the a image <img src="${0}">`,
 's961172c8f7618b07': `Test SubChapter 1`,
 's595af87ad03941c2': `Searchable Docs Example`,
 's06e67f7289d18c70': `An Example of a searchable Documentation`,

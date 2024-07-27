@@ -1,6 +1,6 @@
+import { nothing, type TemplateResult } from "lit";
 import type { EntrypointResults } from "./entrypointApi.js";
 import type { LocaleAndVersionInApi } from "./utils.js";
-
 
 /**
  * Function to configure a chapter with its options.
@@ -25,6 +25,10 @@ export type ChapterResults = {
    * Title of this chapter.
    */
   title: string;
+  /**
+   * Content of the Chapter
+   */
+  content: TemplateResult | string | typeof nothing;
   /**
    * An array of all chapters in the entrypoint in the order in wich there where defined.
    */
@@ -52,6 +56,12 @@ export type ChapterApi = LocaleAndVersionInApi & {
    */
   title(id: string, title: string): void;
   /**
+   * Set the content of the Chapter.
+   * This is always displayed before sub chapters.
+   * @param content - the content to render.
+   */
+  content(content: TemplateResult | string): void;
+  /**
    * Add a chapter to the entrypoint.
    * @param chapter - function describing the chapter.
    */
@@ -67,6 +77,7 @@ export function renderChapter(configFunction: ChapterFunction, locale: string | 
   // Define variables for the result
   let id: string | undefined = undefined;
   let title: string | undefined = undefined;
+  let content: TemplateResult | string | typeof nothing = nothing;
   const chapterFunctions: ChapterFunction[] = [];
   const chapterArray: ChapterResults[] = [];
   const chapterMap: Map<string, ChapterResults> = new Map();
@@ -78,6 +89,10 @@ export function renderChapter(configFunction: ChapterFunction, locale: string | 
       if (title !== undefined || id !== undefined) throw new Error("title was already defined previously");
       id = i;
       title = t;
+    },
+    content(c) {
+      if (content !== nothing) throw new Error("content was already defined previously");
+      content = c;
     },
     addChapter(chapter) {
       chapterFunctions.push(chapter);
@@ -92,6 +107,7 @@ export function renderChapter(configFunction: ChapterFunction, locale: string | 
     id,
     fullId: "fullId" in parent ? `${parent.fullId}*${id}` : id,
     title,
+    content,
     chapterArray,
     chapterMap,
   };

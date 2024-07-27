@@ -16,12 +16,12 @@
     "build": "pnpm run gulp build",
     "buildCi": "pnpm run gulp buildCi",
     "extractTranslations": "pnpm run gulp extractTranslations",
-    "gulp": "pnpm --package=@iiimaddiniii/js-build-tool-cli@0.9.10 dlx js-build-tool"
+    "gulp": "pnpm --package=@iiimaddiniii/js-build-tool-cli@1.0.0 dlx js-build-tool"
   },
   "author": "IIIMADDINIII",
   "license": "MIT",
   "devDependencies": {
-    "@types/js-build-tool-types": "npm:@iiimaddiniii/js-build-tool-types@0.9.10"
+    "@types/js-build-tool-types": "npm:@iiimaddiniii/js-build-tool-types@1.0.0"
   },
   "dependencies": {
     "lit": "^3.1.2",

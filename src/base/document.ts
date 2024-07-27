@@ -1,4 +1,4 @@
-import { css, html, LitElement, type TemplateResult } from "lit";
+import { css, html, LitElement, nothing, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { repeat } from "lit/directives/repeat.js";
 import type { ChapterResults } from "./capterApi.js";
@@ -24,6 +24,7 @@ export class DocsDocument extends LitElement {
   #renderAtLevel(document: ChapterResults | EntrypointResults, level: number = 1): TemplateResult {
     return html`
     	<docs-heading level=${level}>${document.title}</docs-heading>
+      ${"content" in document ? document.content : nothing}
       ${repeat(document.chapterArray, (c) => c.id, (chapter) => this.#renderAtLevel(chapter, level + 1))}
     `;
   }
