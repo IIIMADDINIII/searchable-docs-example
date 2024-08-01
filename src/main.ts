@@ -6,8 +6,8 @@ import { testChapter2 } from "./testChapter2.js";
 
 
 
-export const main = entrypoint(function () {
-  this.title(msg("Searchable Docs Example"), msg("An Example of a searchable Documentation"));
-  this.addChapter(testChapter1);
-  this.addChapter(testChapter2);
+export const main = entrypoint((entrypoint) => {
+  entrypoint.title(msg("Searchable Docs Example"), msg("An Example of a searchable Documentation"));
+  entrypoint.addChapter(testChapter1);
+  entrypoint.addChapter(testChapter2);
 });

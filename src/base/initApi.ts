@@ -5,7 +5,7 @@ import type { RenderDisplayName } from "./utils.js";
 /**
  * Function to configure the application with its options.
  */
-export type InitFunction = (this: InitApi) => void;
+export type InitFunction = (this: InitApi, init: InitApi) => void;
 
 /**
  * Definition of a Locale.
@@ -253,7 +253,7 @@ export function getRenderInit(configFunction: InitFunction): RenderInit {
       },
     };
     // Call the Config Function with the Api
-    configFunction.call(api);
+    configFunction.call(api, api);
     // Validate Config
     if (defaultLocale === undefined && localesDefined) throw new Error("There must be at least one default locale");
     if (defaultVersion === undefined && versionsDefined) throw new Error("There must be at least one default version");

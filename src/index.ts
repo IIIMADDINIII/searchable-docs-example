@@ -7,13 +7,13 @@ import { main } from "./main.js";
 
 
 
-init(function () {
-  this.addLocale({ id: "en", displayName: () => msg("English"), translation: en });
-  this.addLocale({ id: "de", displayName: () => msg("German"), translation: de, default: true });
-  this.addLocale({ id: "src", displayName: () => msg("Source"), translation: "source" });
+init((init) => {
+  init.addLocale({ id: "en", displayName: () => msg("English"), translation: en });
+  init.addLocale({ id: "de", displayName: () => msg("German"), translation: de, default: true });
+  init.addLocale({ id: "src", displayName: () => msg("Source"), translation: "source" });
 
-  this.addVersion({ id: "v1", displayName: () => msg("v1"), default: true });
-  this.addVersion({ id: "v2", displayName: () => msg("v2") });
+  init.addVersion({ id: "v1", displayName: () => msg("v1"), default: true });
+  init.addVersion({ id: "v2", displayName: () => msg("v2") });
 
-  this.docs(main);
+  init.docs(main);
 });

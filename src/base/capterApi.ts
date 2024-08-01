@@ -5,7 +5,7 @@ import type { LocaleAndVersionInApi } from "./utils.js";
 /**
  * Function to configure a chapter with its options.
  */
-export type ChapterFunction = (this: ChapterApi) => void;
+export type ChapterFunction = (this: ChapterApi, chapter: ChapterApi) => void;
 
 /**
  * Result of calling the chapter Render Method.
@@ -99,7 +99,7 @@ export function renderChapter(configFunction: ChapterFunction, locale: string | 
     },
   };
   // Call the Config Function with the Api
-  configFunction.call(api);
+  configFunction.call(api, api);
   // Validate Config
   if (title === undefined || id === undefined) throw new Error("You need to set a Id and Title using this.title in the chapter function");
   // Return value

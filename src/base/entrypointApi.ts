@@ -5,7 +5,7 @@ import type { LocaleAndVersionInApi } from "./utils.js";
 /**
  * Function to configure a chapter with its options.
  */
-export type EntrypointFunction = (this: EntrypointApi) => void;
+export type EntrypointFunction = (this: EntrypointApi, entrypoint: EntrypointApi) => void;
 
 /**
  * List of types wich can be targeted with an id
@@ -85,7 +85,7 @@ export function getRenderEntrypoint(configFunction: EntrypointFunction): RenderE
       }
     };
     // Call the Config Function with the Api
-    configFunction.call(api);
+    configFunction.call(api, api);
     // Validate Config
     if (title === undefined || description === undefined) throw new Error("You need to set a Title and description using this.title in the init function");
     if (chapterFunctions.length === 0) throw new Error("You need to add at least one chapter to the entrypoint using this.addChapter in the init function");
