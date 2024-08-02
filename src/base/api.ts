@@ -1,6 +1,5 @@
 import { css, render } from "lit";
 import type { ChapterFunction } from "./capterApi.js";
-import type { EntrypointFunction } from "./entrypointApi.js";
 import { getRenderInit, type InitFunction } from "./initApi.js";
 import { DocsMain } from "./main.js";
 import { renderError } from "./utils.js";
@@ -24,7 +23,7 @@ export function init(initFunction: InitFunction): void {
     `.styleSheet;
     if (styleSheet === undefined) throw new Error("Error while creating Document Styles");
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
-    mainElement = new DocsMain(getRenderInit(initFunction)());
+    mainElement = new DocsMain(getRenderInit(initFunction));
     document.body.appendChild(mainElement);
   } catch (error) {
     document.body.replaceChildren();
@@ -40,13 +39,4 @@ export function init(initFunction: InitFunction): void {
  */
 export function chapter(chapterFunction: ChapterFunction): ChapterFunction {
   return chapterFunction;
-}
-
-/**
- * Call this to define an entrypoint.
- * @param entrypointFunction - function to define the Entrypoint.
- * @returns the definition of the Entrypoint in form of a function.
- */
-export function entrypoint(entrypointFunction: EntrypointFunction): EntrypointFunction {
-  return entrypointFunction;
 }

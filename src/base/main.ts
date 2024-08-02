@@ -216,7 +216,7 @@ export class DocsMain extends LitElement {
   }
 
   #rerenderDocument(): TemplateResult {
-    const entrypoint = this.#config.entrypoint(this.#getLocale(), this.version);
+    const entrypoint = this.#config.docs(this.#getLocale(), this.version);
     this.#titleElement.innerText = entrypoint.title;
     this.#descriptionElement.content = entrypoint.description;
     return html`

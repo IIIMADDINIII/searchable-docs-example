@@ -1,5 +1,5 @@
 import { type LocaleModule } from "@lit/localize";
-import { getRenderEntrypoint, type EntrypointFunction, type RenderEntrypoint } from "./entrypointApi.js";
+import { createCachedRenderChapter, type CachedRenderChapter, type ChapterFunction } from "./capterApi.js";
 import type { RenderDisplayName } from "./utils.js";
 
 /**
@@ -93,7 +93,7 @@ export type InitResult = {
   /**
    * Function to render the documentation.
    */
-  entrypoint: RenderEntrypoint;
+  docs: CachedRenderChapter;
   /**
    * Do not intercept Anchor Tag Navigations.
    */
@@ -180,7 +180,7 @@ export type InitApi = {
    * Sets the entrypoint for the Documentation.
    * @param docs - the entrypoint of the Documentation.
    */
-  docs(docs: EntrypointFunction): void;
+  docs(docs: ChapterFunction): void;
   /**
    * Disable Anchor tag interception.
    * Will do a page load on every navigation.
@@ -193,92 +193,82 @@ export type InitApi = {
  * @param configFunction - the ConfigFunction to create a Render Function for.
  * @returns the Render Function.
  */
-export function getRenderInit(configFunction: InitFunction): RenderInit {
-  function update(): InitResult {
-    // Define variables for the result
-    let localesDefined = false;
-    const localesArray: LocalesItem[] = [];
-    const localesMap: Map<string, LocalesItem> = new Map();
-    let defaultLocale: string | undefined = undefined;
-    let sourceLocale: string | undefined = undefined;
-    let versionsDefined: boolean = false;
-    const versionsArray: VersionItem[] = [];
-    const versionsMap: Map<string, VersionItem> = new Map();
-    let defaultVersion: string | undefined = undefined;
-    let entrypoint: RenderEntrypoint | undefined = undefined;
-    let disableAnchorInterception = false;
-    // Define the Api functions
-    const api: InitApi = {
-      addLocale(options) {
-        const item: LocalesItem = {
-          id: options.id,
-          displayName: options.displayName,
-          translation: options.translation,
-          default: options.default ?? false,
-        };
-        if (localesMap.has(item.id)) throw new Error("There can not be two locales with the same id");
-        if (item.default) {
-          if (defaultLocale !== undefined) throw new Error("There can only be one default locale");
-          defaultLocale = item.id;
-        }
-        if (options.translation === "source") {
-          if (sourceLocale !== undefined) throw new Error("There can only be one locale with source translations");
-          sourceLocale = item.id;
-        }
-        localesArray.push(item);
-        localesMap.set(item.id, item);
-        localesDefined = true;
-      },
-      addVersion(options) {
-        const item: VersionItem = {
-          id: options.id,
-          displayName: options.displayName ?? (() => options.id),
-          default: options.default ?? false,
-        };
-        if (versionsMap.has(item.id)) throw new Error("There can not be two versions with the same id");
-        if (item.default === true) {
-          if (defaultVersion !== undefined) throw new Error("There can only be one default version");
-          defaultVersion = item.id;
-        }
-        versionsArray.push(item);
-        versionsMap.set(item.id, item);
-        versionsDefined = true;
-      },
-      docs(d) {
-        if (entrypoint !== undefined) throw new Error("docs was already defined previously");
-        entrypoint = getRenderEntrypoint(d);
-      },
-      debugDisableAnchorInterception() {
-        disableAnchorInterception = true;
-      },
-    };
-    // Call the Config Function with the Api
-    configFunction.call(api, api);
-    // Validate Config
-    if (defaultLocale === undefined && localesDefined) throw new Error("There must be at least one default locale");
-    if (defaultVersion === undefined && versionsDefined) throw new Error("There must be at least one default version");
-    if (entrypoint === undefined) throw new Error("You need to set a Documentation entrypoint using this.docs in the init function");
-    // Return result
-    return {
-      localesDefined,
-      localesArray,
-      localesMap,
-      defaultLocale,
-      sourceLocale,
-      versionsDefined,
-      versionsArray,
-      versionsMap,
-      defaultVersion,
-      entrypoint,
-      disableAnchorInterception,
-    };
-  }
-  // Caching
-  let last: InitResult | undefined = undefined;
-  return function renderLocales(): InitResult {
-    if (last === undefined) {
-      last = update();
-    }
-    return last;
+export function getRenderInit(configFunction: InitFunction): InitResult {
+  // Define variables for the result
+  let localesDefined = false;
+  const localesArray: LocalesItem[] = [];
+  const localesMap: Map<string, LocalesItem> = new Map();
+  let defaultLocale: string | undefined = undefined;
+  let sourceLocale: string | undefined = undefined;
+  let versionsDefined: boolean = false;
+  const versionsArray: VersionItem[] = [];
+  const versionsMap: Map<string, VersionItem> = new Map();
+  let defaultVersion: string | undefined = undefined;
+  let docs: CachedRenderChapter | undefined = undefined;
+  let disableAnchorInterception = false;
+  // Define the Api functions
+  const api: InitApi = {
+    addLocale(options) {
+      const item: LocalesItem = {
+        id: options.id,
+        displayName: options.displayName,
+        translation: options.translation,
+        default: options.default ?? false,
+      };
+      if (localesMap.has(item.id)) throw new Error("There can not be two locales with the same id");
+      if (item.default) {
+        if (defaultLocale !== undefined) throw new Error("There can only be one default locale");
+        defaultLocale = item.id;
+      }
+      if (options.translation === "source") {
+        if (sourceLocale !== undefined) throw new Error("There can only be one locale with source translations");
+        sourceLocale = item.id;
+      }
+      localesArray.push(item);
+      localesMap.set(item.id, item);
+      localesDefined = true;
+    },
+    addVersion(options) {
+      const item: VersionItem = {
+        id: options.id,
+        displayName: options.displayName ?? (() => options.id),
+        default: options.default ?? false,
+      };
+      if (versionsMap.has(item.id)) throw new Error("There can not be two versions with the same id");
+      if (item.default === true) {
+        if (defaultVersion !== undefined) throw new Error("There can only be one default version");
+        defaultVersion = item.id;
+      }
+      versionsArray.push(item);
+      versionsMap.set(item.id, item);
+      versionsDefined = true;
+    },
+    docs(d) {
+      if (docs !== undefined) throw new Error("docs was already defined previously");
+      docs = createCachedRenderChapter(d);
+    },
+    debugDisableAnchorInterception() {
+      disableAnchorInterception = true;
+    },
+  };
+  // Call the Config Function with the Api
+  configFunction.call(api, api);
+  // Validate Config
+  if (defaultLocale === undefined && localesDefined) throw new Error("There must be at least one default locale");
+  if (defaultVersion === undefined && versionsDefined) throw new Error("There must be at least one default version");
+  if (docs === undefined) throw new Error("You need to set a Documentation entrypoint using this.docs in the init function");
+  // Return result
+  return {
+    localesDefined,
+    localesArray,
+    localesMap,
+    defaultLocale,
+    sourceLocale,
+    versionsDefined,
+    versionsArray,
+    versionsMap,
+    defaultVersion,
+    docs,
+    disableAnchorInterception,
   };
 };

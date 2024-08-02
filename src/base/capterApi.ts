@@ -1,5 +1,4 @@
 import { nothing, type TemplateResult } from "lit";
-import type { EntrypointResults } from "./entrypointApi.js";
 import type { LocaleAndVersionInApi } from "./utils.js";
 
 /**
@@ -16,6 +15,10 @@ export type ChapterResults = {
    * Id of this chapter used for linking
    */
   id: string;
+  /**
+   * Description of this Chapter.
+   */
+  description: string;
   /**
    * full id of the chapter.
    * this is a list of all ids down to this id joined by "*". 
@@ -70,13 +73,14 @@ export type ChapterApi = LocaleAndVersionInApi & {
 
 /**
  * This is generating the RenderChapter function for a given configFunction.
- * @param configFunction - the ConfigFunction to create a Render Function for.
+ * @param chapterFunction - the ConfigFunction to create a Render Function for.
  * @returns the Render Function.
  */
-export function renderChapter(configFunction: ChapterFunction, locale: string | undefined, version: string | undefined, parent: ChapterResults | EntrypointResults): ChapterResults {
+export function renderChapter(chapterFunction: ChapterFunction, locale: string | undefined, version: string | undefined, parent: ChapterResults | undefined): ChapterResults {
   // Define variables for the result
   let id: string | undefined = undefined;
   let title: string | undefined = undefined;
+  let description: string = "";
   let content: TemplateResult | string | typeof nothing = nothing;
   const chapterFunctions: ChapterFunction[] = [];
   const chapterArray: ChapterResults[] = [];
@@ -99,14 +103,15 @@ export function renderChapter(configFunction: ChapterFunction, locale: string | 
     },
   };
   // Call the Config Function with the Api
-  configFunction.call(api, api);
+  chapterFunction.call(api, api);
   // Validate Config
   if (title === undefined || id === undefined) throw new Error("You need to set a Id and Title using this.title in the chapter function");
   // Return value
   const result: ChapterResults = {
     id,
-    fullId: "fullId" in parent ? `${parent.fullId}*${id}` : id,
+    fullId: parent !== undefined ? `${parent.fullId}*${id}` : id,
     title,
+    description,
     content,
     chapterArray,
     chapterMap,
@@ -120,3 +125,20 @@ export function renderChapter(configFunction: ChapterFunction, locale: string | 
   }
   return result;
 };
+
+
+export type CachedRenderChapter = (locale: string | undefined, version: string | undefined) => ChapterResults;
+
+export function createCachedRenderChapter(chapterFunction: ChapterFunction): CachedRenderChapter {
+  let lastLocale: string | undefined = undefined;
+  let lastVersion: string | undefined = undefined;
+  let last: ChapterResults | undefined = undefined;
+  return function cachedRenderChapter(locale: string | undefined, version: string | undefined): ChapterResults {
+    if (last === undefined || locale !== lastLocale || version !== lastVersion) {
+      last = renderChapter(chapterFunction, locale, version, undefined);
+      lastLocale = locale;
+      lastVersion = version;
+    }
+    return last;
+  };
+}
