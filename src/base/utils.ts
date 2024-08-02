@@ -115,7 +115,7 @@ function processErrorStack(error: Error): TemplateResult | typeof nothing {
 export function renderError(error: unknown, errorMessagePrefix: string = ""): TemplateResult {
   if (error instanceof Error) {
     return html`
-      <div style="height: 100%; width: 100%; background-color: red; color: yellow; padding: 8px;">
+      <div style="height: 100%; width: 100%; background-color: red; color: yellow; padding: 8px; box-sizing: border-box;">
         <h1 style="margin-bottom: 0px;">${errorMessagePrefix}${error.name}: ${error.message}</h1>
         ${error.stack ? html`<div style="padding: 8px; padding-left: 24px;">${processErrorStack(error)}</div>` : nothing}
         ${error.cause ? error.cause instanceof Error ? renderError(error.cause, "Caused by: ") : html`<h1 style="margin-bottom: 0px;">Caused by: ${error.cause}</h1>` : nothing}
@@ -124,3 +124,16 @@ export function renderError(error: unknown, errorMessagePrefix: string = ""): Te
   }
   return html`<div style="height: 100%; width: 100%; background-color: red; color: yellow"><h1>Error: ${error}</h1></div>`;
 }
+
+/**
+ * Throw an Error when given an invalid ID.
+ * @param id - Id to validate.
+ */
+export function asserValidId(id: string): void {
+  if (id === "" || id.includes(ID_SEP)) throw new Error(`Id needs to be a non empty string without any ${ID_SEP}`);
+}
+
+/**
+ * Separator used to serialize a id list to a string.
+ */
+export const ID_SEP = "*";
