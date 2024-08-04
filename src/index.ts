@@ -15,5 +15,5 @@ init((init) => {
   init.addVersion({ id: "v1", displayName: () => msg("v1"), default: true });
   init.addVersion({ id: "v2", displayName: () => msg("v2") });
 
-  init.docs(main);
+  init.mainChapter(main);
 });

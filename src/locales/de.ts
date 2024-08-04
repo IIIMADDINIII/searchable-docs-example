@@ -13,7 +13,9 @@ let cache: import("@lit/localize").LocaleModule | undefined  = undefined;
 export function templates(str: typeof import("@lit/localize").str, html: typeof import("lit").html) {
   if (cache !== undefined) return cache;
   const templates = {
-      's06e67f7289d18c70': `Ein Beispiel einer durchsuchbaren Dokumentation`,
+      'h6805b634ad1937cb': html`Dies beinhaltet ein Bild <img src="${0}">`,
+'h74e9cdd7def4f5c4': html`Ein wenig Inhalt mit <b>Formatierung</b>.`,
+'s06e67f7289d18c70': `Ein Beispiel einer durchsuchbaren Dokumentation`,
 's08cf0b07b5709128': `v1`,
 's08cf0e07b5709641': `v2`,
 's4caed5b7a7e5d89b': `Englisch`,
@@ -23,8 +25,6 @@ export function templates(str: typeof import("@lit/localize").str, html: typeof 
 's961172c8f7618b07': `Test Unterkapitel 1`,
 'sce3cbe891a9f883b': `Test Kapitel 1`,
 'sce3cbf891a9f89ee': `Test Kapitel 2`,
-'h74e9cdd7def4f5c4': html`Some content including <b>styling</b>.`,
-'h6805b634ad1937cb': html`This includes the a image <img src="${0}">`,
     };
   cache = {templates};
   return cache;

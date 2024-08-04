@@ -1,11 +1,10 @@
-import { configureLocalization, localized, str, type LocaleModule } from "@lit/localize";
+import { configureLocalization, localized } from "@lit/localize";
 import { css, html, LitElement, type TemplateResult } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import type { DirectiveResult } from "lit/directive.js";
 import { classMap } from "lit/directives/class-map.js";
 import { repeat } from "lit/directives/repeat.js";
 import "./document";
-import type { InitResult } from "./initApi.js";
+import { InitResult } from "./initResult.js";
 import "./nav";
 import "./select";
 import { getUrlParams, getUrlWithParams, isElement, renderError, searchParamsToObject, setUrlParams, type UrlParams } from "./utils.js";
@@ -17,6 +16,13 @@ export type GetSetLocale = { getLocale: GetLocale; setLocale: SetLocale; };
 @customElement("docs-main")
 @localized()
 export class DocsMain extends LitElement {
+  // Singleton
+  static #instance: DocsMain | undefined = undefined;
+  static get instance(): DocsMain {
+    if (this.#instance === undefined) throw new Error("Accessed DocsMain Instance before creation");
+    return this.#instance;
+  }
+
   static override styles = css`
     :host {
       display: flex;
@@ -53,11 +59,11 @@ export class DocsMain extends LitElement {
       }
     }
   `;
+
   static override get observedAttributes(): string[] {
     return ["locale", ...super.observedAttributes];
   }
 
-  #config: InitResult;
   #setLocale: SetLocale;
   #getLocale: GetLocale;
   #locale: string | undefined = undefined;
@@ -66,32 +72,20 @@ export class DocsMain extends LitElement {
   #titleElement: HTMLTitleElement = document.createElement("title");
   #descriptionElement: HTMLMetaElement = document.createElement("meta");
 
-  constructor(options: InitResult) {
+  constructor() {
     super();
-    this.#config = options;
+    DocsMain.#instance = this;
     this.#initDocument();
     ({ setLocale: this.#setLocale, getLocale: this.#getLocale } = this.#initLocale());
     this.#initState();
   }
 
   #initLocale(): GetSetLocale {
-    if (!this.#config.localesDefined) return {
+    if (!InitResult.localesDefined) return {
       setLocale: () => Promise.resolve(),
       getLocale: () => "",
     };
-    let sourceLocale = this.#config.sourceLocale ?? "en-x-dev";
-    const targetLocales = [...this.#config.localesMap.keys()];
-    return configureLocalization({ sourceLocale, targetLocales, loadLocale: this.#loadLocale.bind(this) });
-  }
-
-  async #loadLocale(locale: string): Promise<LocaleModule> {
-    const validated = this.#getValidatedLocale(locale);
-    if (validated === undefined) throw new Error("Should never happen");
-    const item = this.#config.localesMap.get(validated);
-    if (item === undefined) throw new Error("Should never happen");
-    const translation = item.translation;
-    if (translation === "source") throw new Error("Should never happen");
-    return translation.templates(str, html);
+    return configureLocalization(InitResult);
   }
 
   #initDocument() {
@@ -103,6 +97,7 @@ export class DocsMain extends LitElement {
     metaViewport.content = "width=device-width, initial-scale=1";
     document.head.appendChild(metaViewport);
     document.addEventListener("click", this.#interceptAnchorNavigation.bind(this));
+    document.body.appendChild(this);
   }
 
   #initState() {
@@ -117,7 +112,7 @@ export class DocsMain extends LitElement {
   }
 
   set locale(value: string | undefined | null) {
-    const validated = this.#getValidatedLocale(value);
+    const validated = InitResult.getValidatedLocale(value);
     if (this.#locale === validated) return;
     if (validated === undefined) throw new Error("Should never happen");
     this.#locale = validated;
@@ -130,12 +125,6 @@ export class DocsMain extends LitElement {
     return this.#locale;
   }
 
-  #getValidatedLocale(locale: string | undefined | null): string | undefined {
-    if (!this.#config.localesDefined) return undefined;
-    if (locale === undefined || locale === null) return this.#config.defaultLocale;
-    return locale;
-  }
-
   override attributeChangedCallback(name: string, _old: string | null, value: string | null): void {
     if (name === "locale") {
       this.locale = value;
@@ -146,7 +135,7 @@ export class DocsMain extends LitElement {
 
   @property({ reflect: true })
   set version(value: string | undefined | null) {
-    const validated = this.#getValidatedVersion(value);
+    const validated = InitResult.getValidatedVersion(value);
     if (this.#version === validated) return;
     if (validated === undefined) throw new Error("Should never happen");
     this.#version = validated;
@@ -156,12 +145,6 @@ export class DocsMain extends LitElement {
     return this.#version;
   }
 
-  #getValidatedVersion(version: string | undefined | null): string | undefined {
-    if (!this.#config.versionsDefined) return undefined;
-    if (version === undefined || version === null) return this.#config.defaultVersion;
-    return version;
-  }
-
   #updateState() {
     if (!this.#enableUpdateState) return;
     setUrlParams(this.#getState());
@@ -169,7 +152,7 @@ export class DocsMain extends LitElement {
 
   #onPopState(): void {
     this.#setState(getUrlParams());
-  }
+  };
 
   #setState(state: UrlParams): void {
     this.#enableUpdateState = false;
@@ -179,7 +162,7 @@ export class DocsMain extends LitElement {
     } finally {
       this.#enableUpdateState = true;
     }
-  }
+  };
 
   #getState(): UrlParams {
     const ret: UrlParams = {};
@@ -189,7 +172,7 @@ export class DocsMain extends LitElement {
   }
 
   #interceptAnchorNavigation(e: Event) {
-    if (this.#config.disableAnchorInterception) return;
+    if (InitResult.disableAnchorInterception) return;
     const target = e.composedPath()[0];
     if (!isElement(target, "a")) return;
     const url = new URL(target.href);
@@ -216,7 +199,7 @@ export class DocsMain extends LitElement {
   }
 
   #rerenderDocument(): TemplateResult {
-    const entrypoint = this.#config.docs(this.#getLocale(), this.version);
+    const entrypoint = InitResult.getMainChapterCached(this.#getLocale(), this.version);
     this.#titleElement.innerText = entrypoint.title;
     this.#descriptionElement.content = entrypoint.description;
     return html`
@@ -229,25 +212,25 @@ export class DocsMain extends LitElement {
   }
 
   #renderLocaleSelector(): TemplateResult {
-    if (!this.#config.localesDefined || this.locale === undefined) return html``;
-    const selectedItem = this.#config.localesMap.get(this.locale);
+    if (!InitResult.localesDefined || this.locale === undefined) return html``;
+    const selectedItem = InitResult.getLocaleById(this.locale);
     if (selectedItem === undefined) return html``;
     return html`
       <docs-select>
         <span slot="selected">${selectedItem.displayName()}</span>
-        ${repeat(this.#config.localesArray, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selectedItem.id })} href=${getUrlWithParams({ locale: id }).href}>${displayName()}</a>`)}
+        ${repeat(InitResult.locales, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selectedItem.id })} href=${getUrlWithParams({ locale: id }).href}>${displayName()}</a>`)}
       </docs-select>
     `;
   }
 
-  #renderVersionSelector(): DirectiveResult {
-    if (!this.#config.versionsDefined || this.version === undefined) return html``;
-    const selectedItem = this.#config.versionsMap.get(this.version);
+  #renderVersionSelector(): TemplateResult {
+    if (!InitResult.versionsDefined || this.version === undefined) return html``;
+    const selectedItem = InitResult.getVersionById(this.version);
     if (selectedItem === undefined) return html``;
     return html`
       <docs-select>
         <span slot="selected">${selectedItem.displayName()}</span>
-        ${repeat(this.#config.versionsArray, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selectedItem.id })} href=${getUrlWithParams({ version: id }).href}>${displayName()}</a>`)}
+        ${repeat(InitResult.versions, ({ id, displayName }) => html`<a class=${classMap({ selected: id === selectedItem.id })} href=${getUrlWithParams({ version: id }).href}>${displayName()}</a>`)}
       </docs-select>
     `;
   }

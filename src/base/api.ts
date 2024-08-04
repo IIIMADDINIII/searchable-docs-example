@@ -1,35 +1,13 @@
-import { css, render } from "lit";
-import type { ChapterFunction } from "./capterApi.js";
-import { getRenderInit, type InitFunction } from "./initApi.js";
-import { DocsMain } from "./main.js";
-import { renderError } from "./utils.js";
-
-let mainElement: DocsMain | undefined = undefined;
+import { Chapter, type ChapterFunction, type MainChapterFunction } from "./chapterApi.js";
+import { Paragraph, type ParagraphFunction } from "./contentApi.js";
+import { Init, type InitFunction } from "./initApi.js";
 
 /**
  * Call this once in your main file to set all Settings, Configurations and Content for the Documentation.
  * @param options - An object containing all Settings, Configurations and Content.
  */
 export function init(initFunction: InitFunction): void {
-  try {
-    if (mainElement !== undefined) throw new Error("init function can only be called once");
-    // set Document Styles
-    const styleSheet = css`
-      html, body {
-        height: 100%;
-        width: 100%;
-        margin: 0px;
-      }
-    `.styleSheet;
-    if (styleSheet === undefined) throw new Error("Error while creating Document Styles");
-    document.adoptedStyleSheets = [...document.adoptedStyleSheets, styleSheet];
-    mainElement = new DocsMain(getRenderInit(initFunction));
-    document.body.appendChild(mainElement);
-  } catch (error) {
-    document.body.replaceChildren();
-    render(renderError(error), document.body);
-    console.error(error);
-  }
+  new Init(initFunction);
 }
 
 /**
@@ -37,6 +15,40 @@ export function init(initFunction: InitFunction): void {
  * @param chapterFunction - function to define the Chapter.
  * @returns the definition of the Chapter in form of a function.
  */
-export function chapter(chapterFunction: ChapterFunction): ChapterFunction {
+export function subChapter(chapterFunction: ChapterFunction): ChapterFunction;
+/**
+ * Call this to define a chapter.
+ * @param id - Id of the Chapter to define.
+ * @param chapterFunction - function to define the Chapter.
+ * @returns the definition of the Chapter in form of a function.
+ */
+export function subChapter(id: string, chapterFunction: ChapterFunction): ChapterFunction;
+export function subChapter(...args: [chapterFunction: ChapterFunction] | [id: string, chapterFunction: ChapterFunction]): ChapterFunction {
+  return Chapter.labelId(...args);
+}
+
+/**
+ * Call this to define the main chapter.
+ * @param chapterFunction - function to define the Chapter.
+ * @returns the definition of the Chapter in form of a function.
+ */
+export function mainChapter(chapterFunction: MainChapterFunction): MainChapterFunction {
   return chapterFunction;
+}
+
+/**
+ * Call this to define a Paragraph.
+ * @param paragraphFunction - function to define the Paragraph.
+ * @returns the definition of the Paragraph in form of a function.
+ */
+export function paragraph(paragraphFunction: ParagraphFunction): ParagraphFunction;
+/**
+ * Call this to define a Paragraph.
+ * @param id - Id of the Chapter to define.
+ * @param paragraphFunction - function to define the Paragraph.
+ * @returns the definition of the Paragraph in form of a function.
+ */
+export function paragraph(id: string, paragraphFunction: ParagraphFunction): ParagraphFunction;
+export function paragraph(...args: [paragraphFunction: ParagraphFunction] | [id: string, paragraphFunction: ParagraphFunction]): ParagraphFunction {
+  return Paragraph.labelId(...args);
 }

@@ -1,4 +1,4 @@
-import { html, nothing, type TemplateResult } from "lit";
+import { html, nothing, render, type TemplateResult } from "lit";
 import { join } from "lit/directives/join.js";
 
 /**
@@ -123,6 +123,17 @@ export function renderError(error: unknown, errorMessagePrefix: string = ""): Te
     `;
   }
   return html`<div style="height: 100%; width: 100%; background-color: red; color: yellow"><h1>Error: ${error}</h1></div>`;
+}
+
+/**
+ * Display the Error in the Website and on the Console an throw the error after.
+ * @param error - error to show.
+ */
+export function displayError(error: unknown): never {
+  document.body.replaceChildren();
+  render(renderError(error), document.body);
+  console.error(error);
+  throw error;
 }
 
 /**

@@ -42,6 +42,14 @@
   <source>An Example of a searchable Documentation</source>
   <target state="translated">Ein Beispiel einer durchsuchbaren Dokumentation</target>
 </trans-unit>
+<trans-unit id="h74e9cdd7def4f5c4">
+  <source>Some content including <x id="0" equiv-text="&lt;b&gt;"/>styling<x id="1" equiv-text="&lt;/b&gt;"/>.</source>
+  <target state="translated">Ein wenig Inhalt mit <x id="0" equiv-text="&lt;b&gt;"/>Formatierung<x id="1" equiv-text="&lt;/b&gt;"/>.</target>
+</trans-unit>
+<trans-unit id="h6805b634ad1937cb">
+  <source>This includes the a image <x id="0" equiv-text="&lt;img src=&quot;${testImage}&quot;&gt;"/></source>
+  <target state="translated">Dies beinhaltet ein Bild <x id="0" equiv-text="&lt;img src=&quot;${testImage}&quot;&gt;"/></target>
+</trans-unit>
 </body>
 </file>
 </xliff>
